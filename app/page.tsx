@@ -1,115 +1,66 @@
-"use client";
+import Navbar from "../componentes/Barralateral";
+import CardAroma from "../componentes/CardAroma";
+import MetaDelDia from "../componentes/Metadeldia";
+import ProductosMasVendidos from "../componentes/Productosmasvendidos";
+import ResumenVentas from "../componentes/Resumenventas";
+import ClientesFieles from "../componentes/Clientesfieles";
+import Title from "@/componentes/Title";
 
-import { LuCoffee } from "react-icons/lu";
-import { CiCircleCheck } from "react-icons/ci";
-import {Button, Description, FieldError, Form, Input, Label, TextField} from "@heroui/react";
-
-export default function Home() {
-  <>
-    <section>
-      <nav>
-        <ul>
-          <li>Home</li>
-          <li>Nosotros</li>
-          <li>Contacto</li>
-          <li>Ayuda</li>
-        </ul>
-      </nav>
-    </section>
-    {/*Fin, Menú de navegación*/}
-
-    {/*Inicio, Tarjetas*/ }
-    <section>
-      <article>
-        <div>
-          <img src="https://placehold.co/600x400" alt="Cafe Aroma" />
-        </div>
-      </article>
-      <article>
-        <div>
-          <h2>Bienvenido a Cafe Aroma</h2>
-          <p>Disfruta de nuestros deliciosos cafés y postres.</p>
-        </div>
-      </article>
-    </section>
-  </>
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const data: Record<string, string> = {};
-
-    // Convert FormData to plain object
-    formData.forEach((value, key) => {
-      data[key] = value.toString();
-    });
-
-    alert(`Form submitted with: ${JSON.stringify(data, null, 2)}`);
-  };
-
+export default function DashboardPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <div className = "flex-col gap-8 rounded-3xl bg-white p-10 shadow-lg items-center " >
-        <LuCoffee className="mb-4 text-6xl text-black flex-items-center block mx-auto" />
-        <h1 className="mb-4 text-2xl font-bold text-black text-center">Cafe Aroma</h1>
-        <h1 className="mb-4 text-lg text-black text-center">Sistema de pedidos onlines</h1>
-    <Form
-      className="flex w-96 flex-col gap-4 justify-content-center justify-center"
-      render={(props) => <form {...props} data-custom="foo" />}
-      onSubmit={onSubmit}
-    >
-      <TextField
-        isRequired
-        name="email"
-        type="email"
-        validate={(value) => {
-          if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)) {
-            return "Please enter a valid email address";
-          }
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
 
-          return null;
-        }}
-      >
-        <Label>Email</Label>
-        <Input placeholder="john@example.com" />
-        <FieldError />
-      </TextField>
+      <main className="max-w-7xl mx-auto p-6 flex flex-col gap-6">
+        {/* Totales del día */}
+        <section className="flex flex-col gap-3">
+          <Title title="Totales del día" icon="trend" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <CardAroma
+              icon="check"
+              value={2}
+              description="Entregados"
+              backgroundColor="bg-emerald-50"
+              iconBg="bg-emerald-100"
+              iconColor="text-emerald-600"
+            />
+            <CardAroma
+              icon="clock"
+              value={2}
+              description="Pendientes"
+              backgroundColor="bg-blue-50"
+              iconBg="bg-blue-100"
+              iconColor="text-blue-600"
+            />
+            <CardAroma
+              icon="xCircle"
+              value={1}
+              description="Cancelados"
+              backgroundColor="bg-red-50"
+              iconBg="bg-red-100"
+              iconColor="text-red-500"
+            />
+            <CardAroma
+              icon="assignment"
+              value={7}
+              description="Total"
+              backgroundColor="bg-white"
+              iconBg="bg-gray-100"
+              iconColor="text-gray-600"
+            />
+            <MetaDelDia actual={2} meta={50} />
+          </div>
+        </section>
 
-      <TextField
-        isRequired
-        minLength={8}
-        name="password"
-        type="password"
-        validate={(value) => {
-          if (value.length < 8) {
-            return "Password must be at least 8 characters";
-          }
-          if (!/[A-Z]/.test(value)) {
-            return "Password must contain at least one uppercase letter";
-          }
-          if (!/[0-9]/.test(value)) {
-            return "Password must contain at least one number";
-          }
+        {/* Productos más vendidos */}
+        <ProductosMasVendidos />
 
-          return null;
-        }}
-      >
-        <Label>Password</Label>
-        <Input placeholder="Enter your password" />
-        <Description>Must be at least 8 characters with 1 uppercase and 1 number</Description>
-        <FieldError />
-      </TextField>
-
-      <div className="flex gap-2">
-        <Button type="submit">
-          <CiCircleCheck />
-          Submit
-        </Button>
-        <Button type="reset" variant="secondary">
-          Reset
-        </Button>
-      </div>
-    </Form>
-    </div>
+        {/* Resumen de ventas + Clientes fieles */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ResumenVentas />
+          <ClientesFieles />
+        </section>
+      </main>
     </div>
   );
 }

@@ -1,64 +1,93 @@
-"use client"; // Le indica a Next.js que este componente usa interactividad (clics)
+"use client";
 
-import { useState } from "react";
 import Link from "next/link";
-// Importamos iconos de react-icons
-import { PiList, PiX, PiCoffee, PiUsers, PiHouse } from "react-icons/pi"; 
+import { Avatar } from "@heroui/react";
+import { TfiCup } from "react-icons/tfi";
+import {
+  PiHouse,
+  PiUsersThree,
+  PiSquaresFour,
+  PiCoffee,
+  PiClipboardText,
+  PiReceipt,
+  PiSignOut,
+} from "react-icons/pi";
 
-export default function Sidebar() {
-  // useState crea nuestro "interruptor" para abrir/cerrar el menú
-  const [abierto, setAbierto] = useState(false);
+interface INavItem {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+}
 
+const navItems: INavItem[] = [
+  { href: "/dashboard", label: "Inicio", icon: <PiHouse size={18} />, active: true },
+  { href: "/usuarios", label: "Usuarios", icon: <PiUsersThree size={18} /> },
+  { href: "/categorias", label: "Categorías", icon: <PiSquaresFour size={18} /> },
+  { href: "/productos", label: "Productos", icon: <PiCoffee size={18} /> },
+  { href: "/pedidos", label: "Pedidos", icon: <PiClipboardText size={18} /> },
+  { href: "/facturacion", label: "Facturación", icon: <PiReceipt size={18} /> },
+];
+
+interface INavbar {
+  nombre?: string;
+  rol?: string;
+}
+
+export default function Navbar({
+  nombre = "María González",
+  rol = "Administrador",
+}: INavbar) {
   return (
-    <>
-      {/* BOTÓN FLOTANTE PARA ABRIR EL MENÚ */}
-      {/* Usamos el color Mint (#c7ddcc) para el botón y Navy (#16123f) para el icono */}
-      <button 
-        onClick={() => setAbierto(true)}
-        className="fixed top-4 left-4 z-40 p-2 bg-[#c7ddcc] text-[#16123f] rounded-md shadow-md"
-      >
-        <PiList size={24} />
-      </button>
-
-      {/* FONDO OSCURO (Aparece cuando el menú está abierto) */}
-      {abierto && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setAbierto(false)} // Si tocas fuera del menú, se cierra
-        />
-      )}
-
-      {/* EL MENÚ LATERAL EN SÍ */}
-      {/* bg-[#16123f] aplica el color Navy oficial del PDF */}
-      <div className={`fixed top-0 left-0 h-full w-64 bg-[#16123f] text-white z-50 transform transition-transform duration-300 ${abierto ? "translate-x-0" : "-translate-x-full"}`}>
-        
-        {/* Encabezado del menú con el logo y el botón de cerrar */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold text-[#75c9b7]">Café Aroma</h2> {/* Color Teal */}
-          <button onClick={() => setAbierto(false)} className="text-white hover:text-[#ffe26a]">
-            <PiX size={24} />
-          </button>
+    <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-100">
+      {/* Logo */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-center h-8 w-8 rounded-md bg-[#16123f] text-[#ffe26a]">
+          <TfiCup size={16} />
         </div>
-
-        {/* Lista de enlaces de navegación */}
-        <ul className="flex flex-col p-4 gap-2">
-          <li>
-            <Link href="/" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#75c9b7] hover:text-[#16123f] transition-colors">
-              <PiHouse size={20} /> Inicio
-            </Link>
-          </li>
-          <li>
-            <Link href="/productos" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#75c9b7] hover:text-[#16123f] transition-colors">
-              <PiCoffee size={20} /> Productos
-            </Link>
-          </li>
-          <li>
-            <Link href="/usuarios" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#75c9b7] hover:text-[#16123f] transition-colors">
-              <PiUsers size={20} /> Usuarios
-            </Link>
-          </li>
-        </ul>
+        <span className="font-bold text-[#16123f]">Café Aroma</span>
       </div>
-    </>
+
+      {/* Navegación */}
+      <nav className="hidden md:flex items-center gap-1">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              item.active
+                ? "bg-[#16123f] text-white"
+                : "text-gray-500 hover:bg-gray-100 hover:text-[#16123f]"
+            }`}
+          >
+            {item.icon}
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Usuario */}
+      <div className="flex items-center gap-4 shrink-0">
+        <div className="flex items-center gap-2">
+          <Avatar size="sm">
+            <Avatar.Fallback>
+              {nombre
+                .split(" ")
+                .map((n) => n[0])
+                .slice(0, 2)
+                .join("")}
+            </Avatar.Fallback>
+          </Avatar>
+          <div className="hidden sm:block leading-tight">
+            <p className="text-sm font-semibold text-[#16123f]">{nombre}</p>
+            <p className="text-xs text-gray-400">{rol}</p>
+          </div>
+        </div>
+        <button className="flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-600">
+          <PiSignOut size={16} />
+          Salir
+        </button>
+      </div>
+    </header>
   );
 }
