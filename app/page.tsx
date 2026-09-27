@@ -17,14 +17,14 @@ export default function Login() {
     // Si el usuario escribe la palabra "admin", lo enviamos a la ruta de tu compañera.
     // De lo contrario, asume que es un cliente y lo envía a tu ruta.
     if (email.toLowerCase().includes("admin")) {
-      router.push("/admin");
+      router.push("/admin/dashboard");
     } else {
       router.push("/user/inicio");
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#c7ddcc] font-sans p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 font-sans p-4">
       {/* Encabezado del Login */}
       <div className="flex flex-col items-center mb-6">
         <div className="bg-[#16123f] w-12 h-12 rounded-xl flex items-center justify-center mb-3">
@@ -37,7 +37,7 @@ export default function Login() {
       </div>
 
       {/* Tarjeta Blanca del Formulario */}
-      <div className="bg-white rounded-3xl p-8 w-full max-w-[400px] shadow-sm">
+      <div className="bg-white rounded-3xl p-8 w-full max-w-100 shadow-sm">
         <h2 className="text-2xl font-bold text-[#16123f]">Bienvenido</h2>
         <p className="text-gray-400 text-sm mb-6 mt-1">Ingresa tus datos para continuar</p>
         

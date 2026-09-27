@@ -1,9 +1,9 @@
-import Navbar from "../../componentes/Barralateral";
-import CardAroma from "../../componentes/CardAroma";
-import MetaDelDia from "../../componentes/Metadeldia";
-import ProductosMasVendidos from "../../componentes/Productosmasvendidos";
-import ResumenVentas from "../../componentes/Resumenventas";
-import ClientesFieles from "../../componentes/Clientesfieles";
+import Navbar from "../../../componentes/Barralateral";
+import CardAroma from "../../../componentes/CardAroma";
+import MetaDelDia from "../../../componentes/Metadeldia";
+import ProductosMasVendidos from "../../../componentes/Productosmasvendidos";
+import ResumenVentas from "../../../componentes/Resumenventas";
+import ClientesFieles from "../../../componentes/Clientesfieles";
 import Title from "@/componentes/Title";
 
 export default function DashboardPage() {

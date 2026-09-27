@@ -8,13 +8,11 @@ export default function UserLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen bg-[#c7ddcc]">
-      
+    <div className="flex h-screen bg-gray-50">
       {/* Insertamos nuestro nuevo componente Sidebar */}
       <SidebarUsuario />
 
       <div className="flex-1 flex flex-col">
-        
         {/* Insertamos nuestro nuevo componente Header */}
         <HeaderUsuario />
 
@@ -22,7 +20,6 @@ export default function UserLayout({
         <main className="p-6 flex-1 overflow-y-auto text-[#16123f]">
           {children}
         </main>
-
       </div>
     </div>
   );

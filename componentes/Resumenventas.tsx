@@ -39,13 +39,13 @@ export default function ResumenVentas() {
         <Tabs selectedKey={periodo} onSelectionChange={(key) => setPeriodo(String(key))}>
           <Tabs.ListContainer className="bg-gray-100 rounded-lg p-0.5">
             <Tabs.List className="gap-0.5">
-              <Tabs.Tab id="dia" className="px-3 py-1 text-xs rounded-md data-[selected]:bg-white data-[selected]:shadow-sm">
+              <Tabs.Tab id="dia" className="px-3 py-1 text-xs rounded-md data-selected:bg-white data-selected:shadow-sm">
                 Día
               </Tabs.Tab>
-              <Tabs.Tab id="semana" className="px-3 py-1 text-xs rounded-md data-[selected]:bg-white data-[selected]:shadow-sm">
+              <Tabs.Tab id="semana" className="px-3 py-1 text-xs rounded-md data-selected:bg-white data-selected:shadow-sm">
                 Semana
               </Tabs.Tab>
-              <Tabs.Tab id="mes" className="px-3 py-1 text-xs rounded-md data-[selected]:bg-white data-[selected]:shadow-sm">
+              <Tabs.Tab id="mes" className="px-3 py-1 text-xs rounded-md data-selected:bg-white data-selected:shadow-sm">
                 Mes
               </Tabs.Tab>
             </Tabs.List>
