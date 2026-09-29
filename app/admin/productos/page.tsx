@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Coffee, Plus, Pencil, Trash2 } from "lucide-react";
+import { Coffee, Plus} from "lucide-react";
 import Navbar from "../../../componentes/Barralateral";
 import EncabezadoSeccion from "../../../componentes/EncabezadoSeccion";
-import Buscador from "../../../componentes/Buscador";
-import Badge from "../../../componentes/Badge";
 import ModalProducto, { Producto } from "../../../componentes/ModalProducto";
 import ModalConfirmarEliminar from "../../../componentes/ModalConfirmarEliminar";
+import TableAroma from "../../../componentes/TableAroma";
 
 const productosIniciales: Producto[] = [
   { id: 1, categoria: "Cafés Calientes", nombre: "Latte Clásico", precio: 8500, stock: 40, estado: "Activo", emoji: "☕" },
@@ -51,6 +50,14 @@ export default function ProductosPage() {
     setProductoSeleccionado(null);
   };
 
+  const handleEdit = (producto: Producto) => {
+      setProductoSeleccionado(producto);
+      setModalAbierto("editar");
+    }
+  
+    const handleDelete = (producto: Producto) => {
+      setProductoAEliminar(producto);
+    }
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -70,68 +77,15 @@ export default function ProductosPage() {
             </button>
           }
         />
+        <TableAroma 
+        headers={["ID", "Categoría", "Nombre", "Precio", "Stock", "Estado", "Acciones"]}
+        data={productosFiltrados}
+        handleEdit={handleEdit}
+        handleDelete={handleDelete}
+        handleSearch={setBusqueda}
+        searchValue={busqueda}
+        />
 
-        <Buscador placeholder="Buscar producto o categoría..." value={busqueda} onChange={setBusqueda} />
-
-        <div className="overflow-x-auto rounded-xl border border-gray-100 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-                <th className="px-6 py-3 font-medium">ID</th>
-                <th className="px-6 py-3 font-medium">Categoría</th>
-                <th className="px-6 py-3 font-medium">Nombre</th>
-                <th className="px-6 py-3 font-medium">Precio</th>
-                <th className="px-6 py-3 font-medium">Stock</th>
-                <th className="px-6 py-3 font-medium">Estado</th>
-                <th className="px-6 py-3 text-right font-medium">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productosFiltrados.map((p) => (
-                <tr key={p.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
-                  <td className="px-6 py-3 text-gray-400">#{p.id}</td>
-                  <td className="px-6 py-3 text-gray-500">{p.categoria}</td>
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 text-lg">
-                        {p.emoji}
-                      </span>
-                      <span className="font-medium text-gray-900">{p.nombre}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-3 text-gray-700">{formatoCOP(p.precio)}</td>
-                  <td className={`px-6 py-3 font-medium ${p.stock <= 15 ? "text-amber-600" : "text-gray-700"}`}>
-                    {p.stock}
-                  </td>
-                  <td className="px-6 py-3">
-                    <Badge variant={p.estado.toLowerCase() as "activo" | "inactivo"} label={p.estado} />
-                  </td>
-                  <td className="px-6 py-3">
-                    <div className="flex justify-end gap-3 text-gray-400">
-                      <button
-                        onClick={() => {
-                          setProductoSeleccionado(p);
-                          setModalAbierto("editar");
-                        }}
-                        className="transition hover:text-[#16123f]"
-                        aria-label="Editar"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => setProductoAEliminar(p)}
-                        className="transition hover:text-red-600"
-                        aria-label="Eliminar"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </main>
 
       {modalAbierto && (

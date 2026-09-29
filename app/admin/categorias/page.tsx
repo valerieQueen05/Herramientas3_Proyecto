@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, Plus, Pencil, Trash2 } from "lucide-react";
+import { LayoutGrid, Plus} from "lucide-react";
 import Navbar from "../../../componentes/Barralateral";
 import EncabezadoSeccion from "../../../componentes/EncabezadoSeccion";
-import Buscador from "../../../componentes/Buscador";
-import Badge from "../../../componentes/Badge";
 import ModalCategoria, { Categoria } from "../../../componentes/ModalCategoria";
 import ModalConfirmarEliminar from "../../../componentes/ModalConfirmarEliminar";
+import TableAroma from "../../../componentes/TableAroma";
 
 const categoriasIniciales: Categoria[] = [
   { id: 1, nombre: "Cafés Calientes", estado: "Activo" },
@@ -40,6 +39,15 @@ export default function CategoriasPage() {
     setCategoriaSeleccionada(null);
   };
 
+  const handleEdit = (categoria: Categoria) => {
+    setCategoriaSeleccionada(categoria);
+    setModalAbierto("editar");
+  }
+
+  const handleDelete = (categoria: Categoria) => {
+    setCategoriaAEliminar(categoria);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -54,58 +62,19 @@ export default function CategoriasPage() {
               onClick={() => setModalAbierto("nuevo")}
               className="flex items-center gap-2 rounded-lg bg-[#16123f] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
             >
-              <Plus size={16} />
+              <Plus size={16} />x
               Nueva Categoría
             </button>
           }
         />
-
-        <Buscador placeholder="Buscar categoría..." value={busqueda} onChange={setBusqueda} />
-
-        <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-                <th className="px-6 py-3 font-medium">ID</th>
-                <th className="px-6 py-3 font-medium">Nombre</th>
-                <th className="px-6 py-3 font-medium">Estado</th>
-                <th className="px-6 py-3 text-right font-medium">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categoriasFiltradas.map((c) => (
-                <tr key={c.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
-                  <td className="px-6 py-3 text-gray-400">#{c.id}</td>
-                  <td className="px-6 py-3 font-medium text-gray-900">{c.nombre}</td>
-                  <td className="px-6 py-3">
-                    <Badge variant={c.estado.toLowerCase() as "activo" | "inactivo"} label={c.estado} />
-                  </td>
-                  <td className="px-6 py-3">
-                    <div className="flex justify-end gap-3 text-gray-400">
-                      <button
-                        onClick={() => {
-                          setCategoriaSeleccionada(c);
-                          setModalAbierto("editar");
-                        }}
-                        className="transition hover:text-[#16123f]"
-                        aria-label="Editar"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => setCategoriaAEliminar(c)}
-                        className="transition hover:text-red-600"
-                        aria-label="Eliminar"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TableAroma 
+        headers={["ID", "Nombre", "Estado", "Acciones"]} 
+        data={categoriasFiltradas} 
+        handleEdit={handleEdit} 
+        handleDelete={handleDelete}
+        handleSearch={setBusqueda}
+        searchValue={busqueda}
+        />
       </main>
 
       {modalAbierto && (
