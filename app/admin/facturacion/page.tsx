@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { FileText, Wallet, Calendar, Eye } from "lucide-react";
-import Navbar from "../../../componentes/Barralateral";
-import Title from "../../../componentes/Title";
-import TarjetaFacturacion from "../../../componentes/TarjetaFacturacion";
-import Badge from "../../../componentes/Badge";
-import ModalFactura from "../../../componentes/ModalFactura";
-import { Pedido, pedidosIniciales, formatoCOP, valorPedido } from "../../../componentes/pedidosData";
+import Navbar from "@/src/commons/components/Barralateral";
+import Title from "@/src/commons/components/Title";
+import TarjetaFacturacion from "@/src/features/admin/facturacion/components/TarjetaFacturacion";
+import Badge from "@/src/commons/components/Badge";
+import ModalFactura from "@/src/features/admin/facturacion/components/ModalFactura";
+import { Pedido } from "@/src/commons/types/pedido";
+import { pedidosIniciales, formatoCOP, valorPedido } from "@/src/commons/lib/pedidosData";
 
 const fechaReporte = "2026-08-26";
 

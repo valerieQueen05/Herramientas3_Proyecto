@@ -1,10 +1,10 @@
-import Navbar from "../../../componentes/Barralateral";
-import CardAroma from "../../../componentes/CardAroma";
-import MetaDelDia from "../../../componentes/Metadeldia";
-import ProductosMasVendidos from "../../../componentes/Productosmasvendidos";
-import ResumenVentas from "../../../componentes/Resumenventas";
-import ClientesFieles from "../../../componentes/Clientesfieles";
-import Title from "@/componentes/Title";
+import Navbar from "@/src/commons/components/Barralateral";
+import CardAroma from "@/src/commons/components/CardAroma";
+import MetaDelDia from "@/src/features/admin/dashboard/components/Metadeldia";
+import ProductosMasVendidos from "@/src/features/admin/dashboard/components/Productosmasvendidos";
+import ResumenVentas from "@/src/features/admin/dashboard/components/Resumenventas";
+import ClientesFieles from "@/src/features/admin/dashboard/components/Clientesfieles";
+import Title from "@/src/commons/components/Title";
 
 export default function DashboardPage() {
   return (

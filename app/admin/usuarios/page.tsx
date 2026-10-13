@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { Users, Plus, Pencil, Trash2 } from "lucide-react";
-import Navbar from "../../../componentes/Barralateral";
-import EncabezadoSeccion from "../../../componentes/EncabezadoSeccion";
-import Buscador from "../../../componentes/Buscador";
-import Badge from "../../../componentes/Badge";
-import ModalUsuario, { Usuario } from "../../../componentes/ModalUsuario";
-import ModalConfirmarEliminar from "../../../componentes/ModalConfirmarEliminar";
+import Navbar from "@/src/commons/components/Barralateral";
+import EncabezadoSeccion from "@/src/commons/components/EncabezadoSeccion";
+import Buscador from "@/src/commons/components/Buscador";
+import Badge from "@/src/commons/components/Badge";
+import ModalUsuario, { Usuario } from "@/src/features/admin/usuarios/components/ModalUsuario";
+import ModalConfirmarEliminar from "@/src/commons/components/ModalConfirmarEliminar";
 
 const usuariosIniciales: Usuario[] = [
   { id: 1, nombre: "María González", email: "maria.gonzalez@cafearoma.co", rol: "Administrador", estado: "Activo" },

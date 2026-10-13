@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Eye, Check, X } from "lucide-react";
-import Navbar from "../../../componentes/Barralateral";
-import Title from "../../../componentes/Title";
-import CardAroma from "../../../componentes/CardAroma";
-import Badge from "../../../componentes/Badge";
-import ModalConfirmarAccion from "../../../componentes/ModalConfirmarAccion";
-import ModalDetallePedido from "../../../componentes/ModalDetallePedido";
-import { Pedido, pedidosIniciales, formatoCOP, valorPedido } from "../../../componentes/pedidosData";
+import Navbar from "@/src/commons/components/Barralateral";
+import Title from "@/src/commons/components/Title";
+import CardAroma from "@/src/commons/components/CardAroma";
+import Badge from "@/src/commons/components/Badge";
+import ModalConfirmarAccion from "@/src/features/admin/pedidos/components/ModalConfirmarAccion";
+import ModalDetallePedido from "@/src/features/admin/pedidos/components/ModalDetallePedido";
+import { Pedido } from "@/src/commons/types/pedido";
+import { pedidosIniciales, formatoCOP, valorPedido } from "@/src/commons/lib/pedidosData";
 
 export default function PedidosPage() {
   const [pedidos, setPedidos] = useState(pedidosIniciales);

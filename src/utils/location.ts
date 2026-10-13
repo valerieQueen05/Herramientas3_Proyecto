@@ -1,0 +1,62 @@
+export const aroma = {
+
+navAdmin: {
+home: "Inicio",
+homeurl: "/admin/",
+users: "Usuarios",
+userurl: "/admin/users",
+categories: "Categorías",
+categoryurl: "/admin/category",
+products: "Productos",
+producturl: "/admin/products",
+orders: "Pedidos",
+orderurl: "/admin/orders",
+billing: "Facturación",
+billingurl: "/admin/billing",
+},
+navUser: {
+dashboard: "Dashboard",
+dashboardurl: "/dashboard",
+notifications: "Notificaciones",
+notificationsurl: "/notifications",
+recentOrders: "Pedidos recientes",
+recentOrdersurl: "/recent-orders",
+request: "Realizar pedido",
+requesturl: "/request",
+},
+commons: {
+search: "Buscar",
+new: "Nuevo",
+newUrl: "new",
+appName: "Café Aroma",
+logout: "Salir",
+defaultUserName: "María González",
+defaultUserRole: "Administrador",
+},
+labels: {
+name: 'Nombre',
+submit: 'Enviar',
+new: 'Nuevo',
+delete: 'Eliminar',
+edit: 'Editar',
+previous: "Anterior",
+next: "Siguiente",
+id: "Id",
+actions: "Acciones"
+},
+messages: {
+processing: 'Procesando',
+withoutRows: 'No hay registros para mostrar, crea uno',
+},
+errors: {
+serverError: 'Error al procesar la solicitud',
+unprocessableContent: 'Los datos enviados no son validos',
+smallName: 'El campo debe tener al menos 2 caracteres',
+created: 'Error al crear el registro',
+updated: 'Error al actualizar el registro',
+},
+success: {
+created: 'Registro creado correctamente',
+updated: 'Registro actualizado correctamente',
+},
+};

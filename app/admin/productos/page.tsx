@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { Coffee, Plus} from "lucide-react";
-import Navbar from "../../../componentes/Barralateral";
-import EncabezadoSeccion from "../../../componentes/EncabezadoSeccion";
-import ModalProducto, { Producto } from "../../../componentes/ModalProducto";
-import ModalConfirmarEliminar from "../../../componentes/ModalConfirmarEliminar";
-import TableAroma from "../../../componentes/TableAroma";
+import Navbar from "@/src/commons/components/Barralateral";
+import EncabezadoSeccion from "@/src/commons/components/EncabezadoSeccion";
+import ModalProducto, { Producto } from "@/src/features/admin/productos/components/ModalProducto";
+import ModalConfirmarEliminar from "@/src/commons/components/ModalConfirmarEliminar";
+import TableAroma from "@/src/commons/components/TableAroma";
 
 const productosIniciales: Producto[] = [
   { id: 1, categoria: "Cafés Calientes", nombre: "Latte Clásico", precio: 8500, stock: 40, estado: "Activo", emoji: "☕" },

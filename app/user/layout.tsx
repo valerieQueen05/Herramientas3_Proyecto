@@ -1,6 +1,6 @@
 import React from "react";
-import SidebarUsuario from "@/componentes/SidebarUsuario";
-import HeaderUsuario from "@/componentes/HeaderUsuario";
+import SidebarUsuario from "@/src/features/user/layout/components/SidebarUsuario";
+import HeaderUsuario from "@/src/features/user/layout/components/HeaderUsuario";
 
 export default function UserLayout({
   children,

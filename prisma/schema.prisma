@@ -1,0 +1,144 @@
+// Esquema de la base de datos de Café Aroma.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Enums ----------
+
+enum Rol {
+  ADMINISTRADOR
+  ADMINISTRATIVO
+  MENSAJERO
+  CLIENTE
+}
+
+enum EstadoPedido {
+  SOLICITADO
+  PENDIENTE
+  ENTREGADO
+  CANCELADO
+}
+
+// ---------- Tablas ----------
+
+model Usuario {
+  id                 Int      @id @default(autoincrement())
+  nombre             String
+  apellido           String
+  email              String   @unique
+  contrasena         String // guardar siempre el hash, nunca la contraseña en texto plano
+  rol                Rol      @default(CLIENTE)
+  activo             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion")
+
+  // Auditoría: quién creó o actualizó el registro
+  creadoPorId      Int?     @map("creado_por_id")
+  actualizadoPorId Int?     @map("actualizado_por_id")
+  creadoPor        Usuario? @relation("UsuarioCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  actualizadoPor   Usuario? @relation("UsuarioActualizadoPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+
+  pedidos Pedido[] @relation("PedidosDelUsuario")
+
+  // Relaciones inversas de auditoría
+  usuariosCreados        Usuario[]   @relation("UsuarioCreadoPor")
+  usuariosActualizados   Usuario[]   @relation("UsuarioActualizadoPor")
+  categoriasCreadas      Categoria[] @relation("CategoriaCreadaPor")
+  categoriasActualizadas Categoria[] @relation("CategoriaActualizadaPor")
+  productosCreados       Producto[]  @relation("ProductoCreadoPor")
+  productosActualizados  Producto[]  @relation("ProductoActualizadoPor")
+  pedidosCreados         Pedido[]    @relation("PedidoCreadoPor")
+  pedidosActualizados    Pedido[]    @relation("PedidoActualizadoPor")
+
+  @@map("usuarios")
+}
+
+model Categoria {
+  id                 Int      @id @default(autoincrement())
+  titulo             String
+  url                String   @unique // slug, ej: "bebidas-calientes"
+  activo             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion")
+
+  creadoPorId      Int?     @map("creado_por_id")
+  actualizadoPorId Int?     @map("actualizado_por_id")
+  creadoPor        Usuario? @relation("CategoriaCreadaPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  actualizadoPor   Usuario? @relation("CategoriaActualizadaPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+
+  productos Producto[]
+
+  @@map("categorias")
+}
+
+model Producto {
+  id                 Int      @id @default(autoincrement())
+  titulo             String
+  descripcion        String?
+  url                String   @unique // slug, ej: "latte-clasico"
+  precioCompra       Decimal  @map("precio_compra") @db.Decimal(12, 2)
+  precioVenta        Decimal  @map("precio_venta") @db.Decimal(12, 2)
+  stock              Int      @default(0)
+  imagen             String? // URL de la imagen (ej: Supabase Storage)
+  activo             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion")
+
+  categoriaId Int       @map("categoria_id")
+  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  creadoPorId      Int?     @map("creado_por_id")
+  actualizadoPorId Int?     @map("actualizado_por_id")
+  creadoPor        Usuario? @relation("ProductoCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  actualizadoPor   Usuario? @relation("ProductoActualizadoPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+
+  detalles DetallePedido[]
+
+  @@index([categoriaId])
+  @@map("productos")
+}
+
+model Pedido {
+  id                 Int          @id @default(autoincrement())
+  direccion          String?
+  total              Decimal      @db.Decimal(12, 2)
+  estado             EstadoPedido @default(SOLICITADO)
+  fechaCreacion      DateTime     @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime     @updatedAt @map("fecha_actualizacion")
+
+  usuarioId Int     @map("usuario_id")
+  usuario   Usuario @relation("PedidosDelUsuario", fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  creadoPorId      Int?     @map("creado_por_id")
+  actualizadoPorId Int?     @map("actualizado_por_id")
+  creadoPor        Usuario? @relation("PedidoCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  actualizadoPor   Usuario? @relation("PedidoActualizadoPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+
+  detalles DetallePedido[]
+
+  @@index([usuarioId])
+  @@index([estado])
+  @@map("pedidos")
+}
+
+// Un pedido puede tener varios productos: cada fila es un producto con su cantidad.
+model DetallePedido {
+  id             Int     @id @default(autoincrement())
+  cantidad       Int
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(12, 2) // precio al momento de la compra
+
+  pedidoId   Int      @map("pedido_id")
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId Int      @map("producto_id")
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+
+  @@unique([pedidoId, productoId])
+  @@map("detalle_pedidos")
+}

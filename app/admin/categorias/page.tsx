@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { LayoutGrid, Plus} from "lucide-react";
-import Navbar from "../../../componentes/Barralateral";
-import EncabezadoSeccion from "../../../componentes/EncabezadoSeccion";
-import ModalCategoria, { Categoria } from "../../../componentes/ModalCategoria";
-import ModalConfirmarEliminar from "../../../componentes/ModalConfirmarEliminar";
-import TableAroma from "../../../componentes/TableAroma";
+import Navbar from "@/src/commons/components/Barralateral";
+import EncabezadoSeccion from "@/src/commons/components/EncabezadoSeccion";
+import ModalCategoria, { Categoria } from "@/src/features/admin/categorias/components/ModalCategoria";
+import ModalConfirmarEliminar from "@/src/commons/components/ModalConfirmarEliminar";
+import TableAroma from "@/src/commons/components/TableAroma";
 
 const categoriasIniciales: Categoria[] = [
   { id: 1, nombre: "Cafés Calientes", estado: "Activo" },
