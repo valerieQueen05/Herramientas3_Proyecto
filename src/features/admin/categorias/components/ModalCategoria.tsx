@@ -38,6 +38,22 @@ export default function ModalCategoria({
     },
   });
 
+  const onSubmit = (data: CategoriaFormData) => {
+  try {
+    setIsSubmitting(true);
+    const method = "POST";
+    const url = categoria ? `/api/categorias/${categoria.id}` : "/api/categorias";
+    
+    console.log("---------");
+    console.log(data);
+    console.log("---------");
+  }
+  catch (error) {
+    console.error("Error al guardar la categoría:", error);
+
+  }
+  };
+
   const esEdicion = Boolean(categoria);
 
   const inputClass =
@@ -85,3 +101,7 @@ export default function ModalCategoria({
     </Modal>
   );
 }
+function setIsSubmitting(arg0: boolean) {
+  throw new Error("Function not implemented.");
+}
+
