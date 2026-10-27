@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Modal from "@/src/commons/components/Modal";
 import CampoError from "@/src/commons/components/CampoError";
+import { apiFetch } from "@/src/commons/utils/api";
 import {
   categoriaSchema,
   CategoriaFormData,
@@ -37,16 +38,25 @@ export default function ModalCategoria({
       estado: categoria?.estado ?? "Activo",
     },
   });
+  
 
-  const onSubmit = (data: CategoriaFormData) => {
+   const onSubmit = async (data: FormValues) => {
   try {
     setIsSubmitting(true);
     const method = "POST";
     const url = categoria ? `/api/categorias/${categoria.id}` : "/api/categorias";
+
+    const res = await apiFetch<{message: boolean}>(url, {
+      method,
+      body: data
+    });
     
-    console.log("---------");
-    console.log(data);
-    console.log("---------");
+    if (res.message) alert ("OK");
+    else alert ("BAD");
+
+    //console.log("---------");
+    //console.log(res); 
+    //console.log("---------");
   }
   catch (error) {
     console.error("Error al guardar la categoría:", error);

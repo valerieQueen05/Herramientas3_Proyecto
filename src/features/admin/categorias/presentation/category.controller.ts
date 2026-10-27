@@ -21,14 +21,18 @@ export async function listCategories() {
   }
 }
 
-export async function createCategory(data: ICreate) {
+export async function createCategory(req: Request) {
   try {
-    return NextResponse.json({
-      data: await repo.create(data)
-    });
+  const bodyData = await req.json();
+
+    console.log("%%%%%%%%%%");
+    console.log(bodyData);
+    console.log("%%%%%%%");
+
+    return NextResponse.json({mensaje : true});
   } catch (error) {
     logger({ error: toError(error), module: 'createCategory' });
-    return serverError();
+    return NextResponse.json({ message: aroma.errors.serverError }, { status: 500 });
   }
 }
 
