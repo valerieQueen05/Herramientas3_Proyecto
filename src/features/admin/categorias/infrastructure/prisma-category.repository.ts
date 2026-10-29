@@ -1,12 +1,13 @@
 import { logger } from "@/src/commons/utils/logger";
 import { prisma } from "@/src/commons/lib/prisma";
 import { ICreate, IUpdate } from "@/src/features/admin/categorias/domain/category.entity";
+import { CategoryRepository } from "../domain/category.repository";
 
-export class PrismaCategoryRepository {
+export class PrismaCategoryRepository implements CategoryRepository{
     async list(){
         try {
             const query = await prisma.categoria.findMany({
-                select: { id: true, titulo: true, url: true, fechaCreacion: true, activo: true },
+                select: { id: true, titulo: true, url: true, fechaCreacion: true, fechaActualizacion: true, activo: true },
             });
             return query.map((item) => ({
                 ...item,
@@ -20,32 +21,32 @@ export class PrismaCategoryRepository {
     async getById(id: number){
         try {
             const query = await prisma.categoria.findUnique({ where: {id} });
-            return query;
+            return query ?? false;
         }catch(error){
             logger({ error: error as Error, module: 'PrismaCategoryRepository.getById'});
-            return null;
+            return false;
         }
     }
     async create(data: ICreate){
         try {
-            const query = await prisma.categoria.create({ data });
-            return query;
+            await prisma.categoria.create({ data });
+            return true;
         }catch(error){
             logger({ error: error as Error, module: 'PrismaCategoryRepository.create'});
-            return null;
+            return false;
         }
     }
     async update(data: IUpdate){
         try {
             const { id, ...updateData } = data;
-            const query = await prisma.categoria.update({
+            await prisma.categoria.update({
                 where: { id },
                 data: updateData,
             });
-            return query;
+            return true;
         }catch(error){
             logger({ error: error as Error, module: 'PrismaCategoryRepository.update'});
-            return null;
+            return false;
         }
     }
     async delete(id: number){

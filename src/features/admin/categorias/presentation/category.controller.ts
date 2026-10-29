@@ -1,8 +1,9 @@
 import { aroma } from "@/src/utils/location";
-import {NextResponse} from "next/server";
+import { NextResponse } from "next/server";
 import { logger } from "@/src/commons/utils/logger";
 import { PrismaCategoryRepository } from "../infrastructure/prisma-category.repository";
-import { ICreate, IUpdate } from "../domain/category.entity";
+import { IUpdate } from "../domain/category.entity";
+import { categoriaSchema } from "../schemas/categoriaSchema";
 
 // catch() gives `unknown`; logger expects string | Error
 const toError = (error: unknown) => error instanceof Error ? error : String(error);
@@ -23,11 +24,16 @@ export async function listCategories() {
 
 export async function createCategory(req: Request) {
   try {
-  const bodyData = await req.json();
+    const bodyData = await req.json();
 
-    console.log("%%%%%%%%%%");
+    const validation = categoriaSchema.safeParse(bodyData);
+
+    console.log(" ----------- ");
     console.log(bodyData);
-    console.log("%%%%%%%");
+    console.log(" ----------- ");
+
+    if (!validation.success)
+      return NextResponse.json({ error: aroma.errors.unprocessableContent}, { status: 422})
 
     return NextResponse.json({mensaje : true});
   } catch (error) {
@@ -39,7 +45,9 @@ export async function createCategory(req: Request) {
 export async function getCategoryById(id: number)
 {
     try{
-
+      return NextResponse.json({
+        data: await repo.getById(id)
+      });
     }catch(error){
       logger({ error: toError(error), module: 'getCategoryById' });
       return serverError();
