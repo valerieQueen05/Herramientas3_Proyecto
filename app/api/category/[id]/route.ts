@@ -1,7 +1,5 @@
 export {
-    listCategories as GET,
-    createCategory as POST,
-} from "@/src/features/admin/categorias/presentation/category.controller";
-
-
-
+    updateCategory as PATCH,
+    deleteCategory as DELETE,
+    getCategoryById as GET
+}from "@/src/features/admin/categorias/presentation/category.controller";

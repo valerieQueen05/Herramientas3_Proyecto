@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Upload, X } from "lucide-react";
@@ -49,6 +50,22 @@ export default function ModalProducto({ producto, onClose, onGuardar }: ModalPro
     },
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const onSubmit = async (data: ProductoFormData) => {
+    try {
+      setIsSubmitting(true);
+      // TODO: aquí va la llamada a la API (apiFetch) cuando exista la ruta de productos
+      onGuardar(data);
+    }
+    catch (error) {
+      console.error("Error al guardar el producto:", error);
+    }
+    finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const emoji = watch("emoji");
   const esEdicion = Boolean(producto);
 
@@ -73,14 +90,15 @@ export default function ModalProducto({ producto, onClose, onGuardar }: ModalPro
           <button
             type="submit"
             form="form-producto"
-            className="rounded-lg bg-[#16123f] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+            disabled={isSubmitting}
+            className="rounded-lg bg-[#16123f] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {esEdicion ? "Guardar Cambios" : "Crear Producto"}
+            {isSubmitting ? "Guardando..." : esEdicion ? "Guardar Cambios" : "Crear Producto"}
           </button>
         </>
       }
     >
-      <form id="form-producto" onSubmit={handleSubmit(onGuardar)} className="flex flex-col gap-4">
+      <form id="form-producto" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Categoría</label>

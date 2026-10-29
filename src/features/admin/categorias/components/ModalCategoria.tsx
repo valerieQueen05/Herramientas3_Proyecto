@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Modal from "@/src/commons/components/Modal";
@@ -38,9 +39,10 @@ export default function ModalCategoria({
       estado: categoria?.estado ?? "Activo",
     },
   });
-  
 
-   const onSubmit = async (data: FormValues) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+   const onSubmit = async (data: CategoriaFormData) => {
   try {
     setIsSubmitting(true);
     const method = "POST";
@@ -51,16 +53,22 @@ export default function ModalCategoria({
       body: data
     });
     
-    if (res.message) alert ("OK");
+    if (res.message) {
+      alert ("OK");
+      onGuardar(data);
+    }
     else alert ("BAD");
 
     //console.log("---------");
-    //console.log(res); 
+    //console.log(res);
     //console.log("---------");
   }
   catch (error) {
     console.error("Error al guardar la categoría:", error);
 
+  }
+  finally {
+    setIsSubmitting(false);
   }
   };
 
@@ -86,14 +94,15 @@ export default function ModalCategoria({
           <button
             type="submit"
             form="form-categoria"
-            className="rounded-lg bg-[#16123f] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+            disabled={isSubmitting}
+            className="rounded-lg bg-[#16123f] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {esEdicion ? "Guardar Cambios" : "Crear Categoría"}
+            {isSubmitting ? "Guardando..." : esEdicion ? "Guardar Cambios" : "Crear Categoría"}
           </button>
         </>
       }
     >
-      <form id="form-categoria" onSubmit={handleSubmit(onGuardar)} className="flex flex-col gap-4">
+      <form id="form-categoria" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div>
           <label className={labelClass}>Nombre</label>
           <input className={inputClass} placeholder="Ej: Cafés Calientes" {...register("nombre")} />
@@ -110,8 +119,5 @@ export default function ModalCategoria({
       </form>
     </Modal>
   );
-}
-function setIsSubmitting(arg0: boolean) {
-  throw new Error("Function not implemented.");
 }
 
