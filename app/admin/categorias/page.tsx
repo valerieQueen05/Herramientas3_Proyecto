@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LayoutGrid, Plus} from "lucide-react";
 import Navbar from "@/src/commons/components/Barralateral";
 import EncabezadoSeccion from "@/src/commons/components/EncabezadoSeccion";
@@ -22,6 +22,17 @@ export default function CategoriasPage() {
   const [modalAbierto, setModalAbierto] = useState<"nuevo" | "editar" | null>(null);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<Categoria | null>(null);
   const [categoriaAEliminar, setCategoriaAEliminar] = useState<Categoria | null>(null);
+  const [notificacion, setNotificacion] = useState<{
+    mensaje: string;
+    tipo: "success" | "error" | "loading";
+  } | null>(null);
+
+  useEffect(() => {
+    if (!notificacion || notificacion.tipo === "loading") return;
+
+    const timeout = setTimeout(() => setNotificacion(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [notificacion]);
 
   const categoriasFiltradas = categorias.filter((c) =>
     c.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -85,6 +96,7 @@ export default function CategoriasPage() {
             setCategoriaSeleccionada(null);
           }}
           onGuardar={guardarCategoria}
+          onNotificar={(mensaje, tipo) => setNotificacion({ mensaje, tipo })}
         />
       )}
 
@@ -98,6 +110,37 @@ export default function CategoriasPage() {
             setCategoriaAEliminar(null);
           }}
         />
+      )}
+
+      {notificacion && (
+        <div
+          role={notificacion.tipo === "error" ? "alert" : "status"}
+          className={`fixed right-6 top-6 z-[60] flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-white shadow-lg ${
+            notificacion.tipo === "error"
+              ? "bg-red-600"
+              : notificacion.tipo === "success"
+                ? "bg-green-600"
+                : "bg-[#16123f]"
+          }`}
+        >
+          {notificacion.tipo === "loading" && (
+            <span
+              aria-hidden="true"
+              className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            />
+          )}
+          <span>{notificacion.mensaje}</span>
+          {notificacion.tipo !== "loading" && (
+            <button
+              type="button"
+              onClick={() => setNotificacion(null)}
+              className="ml-2 font-semibold"
+              aria-label="Cerrar notificación"
+            >
+              ×
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
