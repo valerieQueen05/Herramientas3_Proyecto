@@ -5,7 +5,7 @@ import { PrismaProductRepository } from "../infrastructure/prisma-product.reposi
 import { IUpdate } from "../domain/product.entity";
 import {prisma} from "@/src/commons/lib/prisma";
 
-// --- Nuevos imports para Arquitectura Limpia ---
+
 import { productContainer } from "../productos.container";
 import { productoSchema } from "../schemas/productoSchema";
 

@@ -1,10 +1,21 @@
 import { CategoryRepository } from "../domain/category.repository";
-import { IUpdate } from "../domain/category.entity";
+import { ICreate, IUpdate } from "../domain/category.entity";
+import { createSlug } from "@/src/commons/utils/helpers";
 
 export class UpdateUseCase {
     constructor(private repo: CategoryRepository) {}
     
         execute(data: IUpdate){
-            return this.repo.update(data);
+            const url = createSlug (data.titulo);
+            const dataToUpdate: ICreate = {
+                id: data.id,
+                titulo: data.titulo,
+                url,
+                };
+
+
+
+
+            return this.repo.update(dataToUpdate);
         }
 }

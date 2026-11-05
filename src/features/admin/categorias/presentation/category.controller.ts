@@ -4,6 +4,8 @@ import { logger } from "@/src/commons/utils/logger";
 import { PrismaCategoryRepository } from "../infrastructure/prisma-category.repository";
 import { IUpdate } from "../domain/category.entity";
 import { categoriaSchema } from "../schemas/categoriaSchema";
+import { categoryContainer } from "../category.container";
+import { IRequestParams } from "@/src/utils/interfaces";
 
 // catch() gives `unknown`; logger expects string | Error
 const toError = (error: unknown) => error instanceof Error ? error : String(error);
@@ -13,12 +15,21 @@ const serverError = () =>
 
 export async function listCategories() {
   try {
-    return NextResponse.json({
-      data: await repo.list()
-    });
+    
+    const data = await categoryContainer.listCategories.execute();
+    if(!data)
+      //Agregado por el maestro (KOREAN LOVE)
+
+    //No tenemos los Locations.ts o no se tienen el mismo nombre
+      return NextResponse.json({error : aroma.errors.notFoundData});
+      return NextResponse.json({data});
+    
   } catch (error) {
     logger({ error: toError(error), module: 'listCategories' });
-    return serverError();
+    return NextResponse.json({
+      status: 500,
+      menssage: aroma.errors.serverError
+    });
   }
 }
 
@@ -34,39 +45,81 @@ export async function createCategory(req: Request) {
 
     if (!validation.success)
       return NextResponse.json({ error: aroma.errors.unprocessableContent}, { status: 422})
+      console.log(validation);
+    //ver cuales son las incosistencias en esta parte que fue agregada por el maestro.
+    const status = await categoryContainer.createCategory.execute(validation.data.nombre);
 
-    return NextResponse.json({mensaje : true});
+    console.log(status);
+
+    return NextResponse.json({mensaje : status ? aroma.success.created : aroma.errors.created});
   } catch (error) {
     logger({ error: toError(error), module: 'createCategory' });
     return NextResponse.json({ message: aroma.errors.serverError }, { status: 500 });
   }
 }
-
-export async function getCategoryById(id: number)
-{
+//Terminar y poner correctamente el Params, desde el archivo de utils e interfaces, ahi hay que poner params, con la foto de valerie y terminar esta linea con la otra foto que le mande
+export async function getCategoryById(req: Request, { params }: IRequestParams){
     try{
-      return NextResponse.json({
-        data: await repo.getById(id)
-      });
+      const { id } = params;
+      const Validation = categoriaSchema.safeParse(data);
+
+      if (!Validation.success)
+        return NextResponse.json({ error: aroma.errors.unprocessableContent }, { status: 422 });
+      const data = {
+        id: Number(id),
+        titulo: Validation.data.nombre,
+      }
+
+      const status = await categoryContainer.getCategoryById.execute(data);
+
+
+      return data ? NextResponse.json({data: data });
+
     }catch(error){
       logger({ error: toError(error), module: 'getCategoryById' });
-      return serverError();
+      return NextResponse.json({
+        status: 500,
+        message: aroma.errors.serverError
+      });
     }
 }
 
-export async function updateCategory(data: IUpdate) {
+export async function updateCategory(req: Request, { params }: IRequestParams) {
   try {
-    return NextResponse.json({
-      data: await repo.update(data)
-    });
+    //Modificado tambien.
+    const { id } = params;
+    const bodyData = await req.json();
+    
+    const validation = categoriaSchema.safeParse(bodyData);
+
+    if (!validation.success)
+      return NextResponse.json({ error: aroma.errors.unprocessableContent }, { status: 422 });
+
+    const data = {
+      id: Number(id),
+      titulo: validation.data.nombre,
+    }
+
+    const status = await categoryContainer.updateCategory.execute(data);
+
+    return NextResponse.json({ data });
   } catch (error) {
     logger({ error: toError(error), module: 'updateCategory' });
     return serverError();
   }
 }
 
-export async function deleteCategory(id: number) {
+export async function deleteCategory(request: Request, { params }: IRequestParams) {
   try {
+    const { id } = params;
+    const validation = categoriaSchema.safeParse({ id: Number(id) });
+
+    if (!validation.success)
+      return NextResponse.json({ error: aroma.errors.unprocessableContent }, { status: 422 });
+
+    const data = {
+      id: Number(id),
+    }
     return NextResponse.json({
       data: await repo.delete(id)
     });
