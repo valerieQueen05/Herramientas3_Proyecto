@@ -1,9 +1,9 @@
-import { TIconsAvailable} from "@types/icons";
+import type { LucideIcon } from "lucide-react";
 
-export interface IHeaverNavItem {
+export interface IHeaderNavItem {
     label: string;
     href: string;
-    icon: TIconsAvailable;
+    icon: LucideIcon;
 }
 
 export interface IHeaderAroma {
@@ -12,6 +12,7 @@ export interface IHeaderAroma {
     avatarUrl?: string;
 }
 
+// En Next.js 15+ los params de una ruta dinámica llegan como una Promise
 export interface IRequestParams {
-    params: { promise<{id: string;}>;
-    };
+    params: Promise<{ id: string }>;
+}

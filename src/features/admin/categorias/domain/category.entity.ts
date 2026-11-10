@@ -18,3 +18,9 @@ export interface IUpdate {
   url?: string;
   activo?: boolean;
 }
+
+// Lo que devuelve el listado: las fechas ya convertidas a texto (ISO)
+export type CategoryList = Omit<Category, "fechaCreacion" | "fechaActualizacion"> & {
+  fechaCreacion: string;
+  fechaActualizacion: string;
+};

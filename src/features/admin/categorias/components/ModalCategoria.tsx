@@ -21,12 +21,14 @@ interface ModalCategoriaProps {
   categoria?: Categoria;
   onClose: () => void;
   onGuardar: (categoria: Omit<Categoria, "id">) => void;
+  onNotificar?: (mensaje: string, tipo: "success" | "error" | "loading") => void;
 }
 
 export default function ModalCategoria({
   categoria,
   onClose,
   onGuardar,
+  onNotificar,
 }: ModalCategoriaProps) {
   const {
     register,
@@ -42,34 +44,29 @@ export default function ModalCategoria({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-   const onSubmit = async (data: CategoriaFormData) => {
-  try {
-    setIsSubmitting(true);
-    const method = "POST";
-    const url = categoria ? `/api/categorias/${categoria.id}` : "/api/categorias";
+  const onSubmit = async (data: CategoriaFormData) => {
+    try {
+      setIsSubmitting(true);
+      onNotificar?.("Guardando...", "loading");
 
-    const res = await apiFetch<{message: boolean}>(url, {
-      method,
-      body: data
-    });
-    
-    if (res.message) {
-      alert ("OK");
+      // Crear = POST /api/category  |  Editar = PATCH /api/category/:id
+      const method = categoria ? "PATCH" : "POST";
+      const url = categoria ? `/api/category/${categoria.id}` : "/api/category";
+
+      // apiFetch lanza un error si el status no es 2xx, así que si llega aquí salió bien
+      const res = await apiFetch<{ message: string }>(url, {
+        method,
+        body: data,
+      });
+
+      onNotificar?.(res.message, "success");
       onGuardar(data);
+    } catch (error) {
+      console.error("Error al guardar la categoría:", error);
+      onNotificar?.(error instanceof Error ? error.message : "Error al guardar", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    else alert ("BAD");
-
-    //console.log("---------");
-    //console.log(res);
-    //console.log("---------");
-  }
-  catch (error) {
-    console.error("Error al guardar la categoría:", error);
-
-  }
-  finally {
-    setIsSubmitting(false);
-  }
   };
 
   const esEdicion = Boolean(categoria);

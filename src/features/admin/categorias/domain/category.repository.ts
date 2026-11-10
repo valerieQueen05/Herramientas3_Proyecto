@@ -1,7 +1,7 @@
-import { Category, ICreate, IUpdate } from "./category.entity";
+import { Category, CategoryList, ICreate, IUpdate } from "./category.entity";
 
 export interface CategoryRepository {
-    list(): Promise<Category[] | boolean>;
+    list(): Promise<CategoryList[] | boolean>;
     create(data: ICreate): Promise<boolean>;
     getById(id: number) : Promise<Category | boolean>;
     update(data: IUpdate): Promise<boolean>;

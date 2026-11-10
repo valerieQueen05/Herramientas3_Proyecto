@@ -1,13 +1,11 @@
 import { logger } from "@/src/commons/utils/logger";
 import { prisma } from "@/src/commons/lib/prisma";
-import { Category, ICreate, IUpdate } from "@/src/features/admin/categorias/domain/category.entity";
+import { Category, CategoryList, ICreate, IUpdate } from "@/src/features/admin/categorias/domain/category.entity";
 import { CategoryRepository } from "../domain/category.repository";
-import { validationSuite } from "@hookform/resolvers/vest/src/__tests__/__fixtures__/data.js";
-import { IRequestParams } from "@/src/utils/interfaces";
 
 export class PrismaCategoryRepository implements CategoryRepository{
     //modificado por el maestro
-    async list(): Promise< Category [] | boolean>{
+    async list(): Promise<CategoryList[] | boolean>{
         try {
             const query = await prisma.categoria.findMany({
                 select: { id: true, titulo: true, url: true, fechaCreacion: true, fechaActualizacion: true, activo: true },
@@ -33,9 +31,9 @@ export class PrismaCategoryRepository implements CategoryRepository{
             return [];
         }
     }
-    async getById(request : Request, { params }: IRequestParams): Promise<Category | boolean> {
+    // El repositorio solo recibe el id; el Request y los params se manejan en el controller
+    async getById(id: number): Promise<Category | boolean> {
         try {
-            const { id } = params;
             const query = await prisma.categoria.findUnique({ where: {id} ,
             select: 
             { id: true,
@@ -74,7 +72,8 @@ export class PrismaCategoryRepository implements CategoryRepository{
                 where: { id: data.id },
                 data: {
                     titulo: data.titulo,
-                    url: data.url
+                    url: data.url,
+                    activo: data.activo
                 }
             });
         
