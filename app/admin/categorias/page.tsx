@@ -1,23 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LayoutGrid, Plus} from "lucide-react";
 import Navbar from "@/src/commons/components/Barralateral";
 import EncabezadoSeccion from "@/src/commons/components/EncabezadoSeccion";
 import ModalCategoria, { Categoria } from "@/src/features/admin/categorias/components/ModalCategoria";
 import ModalConfirmarEliminar from "@/src/commons/components/ModalConfirmarEliminar";
 import TableAroma from "@/src/commons/components/TableAroma";
+import { apiFetch } from "@/src/commons/utils/api";
+import { CategoryList } from "@/src/features/admin/categorias/domain/category.entity";
 
-const categoriasIniciales: Categoria[] = [
-  { id: 1, nombre: "Cafés Calientes", estado: "Activo" },
-  { id: 2, nombre: "Bebidas Frías", estado: "Activo" },
-  { id: 3, nombre: "Postres", estado: "Activo" },
-  { id: 4, nombre: "Panadería", estado: "Activo" },
-  { id: 5, nombre: "Snacks", estado: "Inactivo" },
-];
+// La API devuelve los campos de la BD (titulo, activo); la tabla usa (nombre, estado)
+const toCategoria = (c: CategoryList): Categoria => ({
+  id: c.id,
+  nombre: c.titulo,
+  estado: c.activo ? "Activo" : "Inactivo",
+});
+
+const obtenerCategorias = async () => {
+  const res = await apiFetch<{ data: CategoryList[] }>("/api/category");
+  return res.data.map(toCategoria);
+};
 
 export default function CategoriasPage() {
-  const [categorias, setCategorias] = useState(categoriasIniciales);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [modalAbierto, setModalAbierto] = useState<"nuevo" | "editar" | null>(null);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<Categoria | null>(null);
@@ -26,6 +32,21 @@ export default function CategoriasPage() {
     mensaje: string;
     tipo: "success" | "error" | "loading";
   } | null>(null);
+
+  const cargarCategorias = useCallback(() => {
+    obtenerCategorias()
+      .then(setCategorias)
+      .catch((error) =>
+        setNotificacion({
+          mensaje: error instanceof Error ? error.message : "Error al cargar las categorías",
+          tipo: "error",
+        })
+      );
+  }, []);
+
+  useEffect(() => {
+    cargarCategorias();
+  }, [cargarCategorias]);
 
   useEffect(() => {
     if (!notificacion || notificacion.tipo === "loading") return;
@@ -38,16 +59,29 @@ export default function CategoriasPage() {
     c.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const guardarCategoria = (datos: Omit<Categoria, "id">) => {
-    if (modalAbierto === "editar" && categoriaSeleccionada) {
-      setCategorias((prev) =>
-        prev.map((c) => (c.id === categoriaSeleccionada.id ? { ...c, ...datos } : c))
-      );
-    } else {
-      setCategorias((prev) => [...prev, { id: Math.max(0, ...prev.map((c) => c.id)) + 1, ...datos }]);
-    }
+  // El modal ya guardó en la API; aquí solo cerramos y recargamos la lista
+  const guardarCategoria = () => {
     setModalAbierto(null);
     setCategoriaSeleccionada(null);
+    cargarCategorias();
+  };
+
+  const eliminarCategoria = async (categoria: Categoria) => {
+    try {
+      setNotificacion({ mensaje: "Eliminando...", tipo: "loading" });
+      const res = await apiFetch<{ message: string }>(`/api/category/${categoria.id}`, {
+        method: "DELETE",
+      });
+      setNotificacion({ mensaje: res.message, tipo: "success" });
+      cargarCategorias();
+    } catch (error) {
+      setNotificacion({
+        mensaje: error instanceof Error ? error.message : "Error al eliminar",
+        tipo: "error",
+      });
+    } finally {
+      setCategoriaAEliminar(null);
+    }
   };
 
   const handleEdit = (categoria: Categoria) => {
@@ -73,7 +107,7 @@ export default function CategoriasPage() {
               onClick={() => setModalAbierto("nuevo")}
               className="flex items-center gap-2 rounded-lg bg-[#16123f] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
             >
-              <Plus size={16} />x
+              <Plus size={16} />
               Nueva Categoría
             </button>
           }
@@ -105,10 +139,7 @@ export default function CategoriasPage() {
           titulo="Eliminar Categoría"
           nombre={categoriaAEliminar.nombre}
           onCancelar={() => setCategoriaAEliminar(null)}
-          onConfirmar={() => {
-            setCategorias((prev) => prev.filter((c) => c.id !== categoriaAEliminar.id));
-            setCategoriaAEliminar(null);
-          }}
+          onConfirmar={() => eliminarCategoria(categoriaAEliminar)}
         />
       )}
 

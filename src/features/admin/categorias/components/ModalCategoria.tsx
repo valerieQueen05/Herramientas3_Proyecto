@@ -10,6 +10,7 @@ import {
   categoriaSchema,
   CategoriaFormData,
 } from "@/src/features/admin/categorias/schemas/categoriaSchema";
+import { useRouter } from "next/router";
 
 export interface Categoria {
   id: number;
@@ -33,6 +34,8 @@ export default function ModalCategoria({
   const {
     register,
     handleSubmit,
+    reset,
+    setValue,
     formState: { errors },
   } = useForm<CategoriaFormData>({
     resolver: zodResolver(categoriaSchema),
@@ -41,6 +44,8 @@ export default function ModalCategoria({
       estado: categoria?.estado ?? "Activo",
     },
   });
+
+  const router = useRouter();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,6 +63,14 @@ export default function ModalCategoria({
         method,
         body: data,
       });
+      if (res.success) {
+        alert("se creo el registro correctamente");
+        router.back();
+       } else {
+        alert ("Se genero un error al crear el registro");
+        setIsSubmitting(false);
+       }
+
 
       onNotificar?.(res.message, "success");
       onGuardar(data);
@@ -85,8 +98,7 @@ export default function ModalCategoria({
             type="button"
             onClick={onClose}
             className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
-          >
-            Cancelar
+          >            Cancelar
           </button>
           <button
             type="submit"
@@ -117,4 +129,3 @@ export default function ModalCategoria({
     </Modal>
   );
 }
-

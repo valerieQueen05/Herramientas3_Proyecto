@@ -5,10 +5,11 @@ import { createSlug } from "@/src/commons/utils/helpers";
 export class CreateUseCase {
     constructor(private repo: CategoryRepository) { }
 
-    execute(name: string) {
+    execute(name: string, activo = true) {
         const data: ICreate = {
             titulo: name,
             url: createSlug(name),
+            activo,
         };
         return this.repo.create(data);
     }

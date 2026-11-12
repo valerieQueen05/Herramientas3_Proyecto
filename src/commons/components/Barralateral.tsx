@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@heroui/react";
-import { TfiCup } from "react-icons/tfi";
 import {Coffee} from "lucide-react";
 import {
   PiHouse,

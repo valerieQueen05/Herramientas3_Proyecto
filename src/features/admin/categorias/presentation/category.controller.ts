@@ -23,7 +23,7 @@ export async function listCategories() {
     const data = await categoryContainer.listCategories.execute();
 
     if (!data)
-      return NextResponse.json({ error: aroma.errors.notFoundData }, { status: 404 });
+      return NextResponse.json({ message: aroma.errors.notFoundData }, { status: 404 });
 
     return NextResponse.json({ data });
   } catch (error) {
@@ -38,9 +38,12 @@ export async function createCategory(req: Request) {
     const validation = categoriaSchema.safeParse(bodyData);
 
     if (!validation.success)
-      return NextResponse.json({ error: aroma.errors.unprocessableContent }, { status: 422 });
+      return NextResponse.json({ message: aroma.errors.unprocessableContent }, { status: 422 });
 
-    const status = await categoryContainer.createCategory.execute(validation.data.nombre);
+    const status = await categoryContainer.createCategory.execute(
+      validation.data.nombre,
+      validation.data.estado === "Activo"
+    );
 
     if (!status)
       return NextResponse.json({ message: aroma.errors.created }, { status: 500 });
@@ -57,12 +60,12 @@ export async function getCategoryById(req: Request, { params }: IRequestParams) 
     const id = await getIdFromParams(params);
 
     if (!id)
-      return NextResponse.json({ error: aroma.errors.invalidId }, { status: 400 });
+      return NextResponse.json({ message: aroma.errors.invalidId }, { status: 400 });
 
     const data = await categoryContainer.getCategoryById.execute(id);
 
     if (!data)
-      return NextResponse.json({ error: aroma.errors.notFound }, { status: 404 });
+      return NextResponse.json({ message: aroma.errors.notFound }, { status: 404 });
 
     return NextResponse.json({ data });
   } catch (error) {
@@ -76,13 +79,13 @@ export async function updateCategory(req: Request, { params }: IRequestParams) {
     const id = await getIdFromParams(params);
 
     if (!id)
-      return NextResponse.json({ error: aroma.errors.invalidId }, { status: 400 });
+      return NextResponse.json({ message: aroma.errors.invalidId }, { status: 400 });
 
     const bodyData = await req.json();
     const validation = categoriaSchema.safeParse(bodyData);
 
     if (!validation.success)
-      return NextResponse.json({ error: aroma.errors.unprocessableContent }, { status: 422 });
+      return NextResponse.json({ message: aroma.errors.unprocessableContent }, { status: 422 });
 
     // Traducimos los nombres del formulario (nombre, estado) a los de la BD (titulo, activo)
     const status = await categoryContainer.updateCategory.execute({
@@ -106,7 +109,7 @@ export async function deleteCategory(req: Request, { params }: IRequestParams) {
     const id = await getIdFromParams(params);
 
     if (!id)
-      return NextResponse.json({ error: aroma.errors.invalidId }, { status: 400 });
+      return NextResponse.json({ message: aroma.errors.invalidId }, { status: 400 });
 
     const status = await categoryContainer.deleteCategory.execute(id);
 

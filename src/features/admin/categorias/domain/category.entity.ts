@@ -10,6 +10,7 @@ export type Category = {
 export interface ICreate {
   titulo: string;
   url: string;
+  activo?: boolean;
 }
 
 export interface IUpdate {

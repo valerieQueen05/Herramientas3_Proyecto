@@ -2,16 +2,26 @@ import Buscador from "@/src/commons/components/Buscador";
 import Badge from "@/src/commons/components/Badge";
 import { Pencil, Trash2 } from "lucide-react";
 
-interface ITableAromaProps {
+// Fila genérica: todas tienen id, nombre y estado; precio/stock/categoria son opcionales (productos)
+interface ITableRow {
+    id: number;
+    nombre: string;
+    estado: string;
+    precio?: string | number;
+    stock?: string | number;
+    categoria?: string;
+}
+
+interface ITableAromaProps<T extends ITableRow> {
     headers: string[];
-    data: any[];
-    handleEdit: (item: any) => void;
-    handleDelete: (item: any) => void;
+    data: T[];
+    handleEdit: (item: T) => void;
+    handleDelete: (item: T) => void;
     handleSearch: (query: string) => void;
     searchValue: string;
 }
 
-export default function TableAroma({ headers, data, handleEdit, handleDelete, handleSearch, searchValue }: ITableAromaProps) {
+export default function TableAroma<T extends ITableRow>({ headers, data, handleEdit, handleDelete, handleSearch, searchValue }: ITableAromaProps<T>) {
   return (
     <div>
     {<Buscador placeholder="Buscar..." value={searchValue} onChange={handleSearch} />}
@@ -42,16 +52,14 @@ export default function TableAroma({ headers, data, handleEdit, handleDelete, ha
                   <td className="px-6 py-3">
                     <div className="flex justify-end gap-3 text-gray-400">
                       <button
-                        onClick={() => {
-                          handleEdit && handleEdit(c);
-                        }}
+                        onClick={() => handleEdit(c)}
                         className="transition hover:text-[#16123f]"
                         aria-label="Editar"
                       >
                         <Pencil size={16} />
                       </button>
                       <button
-                        onClick={handleDelete ? () => handleDelete(c) : undefined}
+                        onClick={() => handleDelete(c)}
                         className="transition hover:text-red-600"
                         aria-label="Eliminar"
                       >

@@ -1,0 +1,1 @@
+//Este de Skeleton es un componente de react solo hay que buscarlo

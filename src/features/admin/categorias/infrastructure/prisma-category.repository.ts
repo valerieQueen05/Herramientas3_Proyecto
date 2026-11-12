@@ -9,6 +9,7 @@ export class PrismaCategoryRepository implements CategoryRepository{
         try {
             const query = await prisma.categoria.findMany({
                 select: { id: true, titulo: true, url: true, fechaCreacion: true, fechaActualizacion: true, activo: true },
+                orderBy: { id: "asc" },
             });
             //Modificado por el maestro(KOREAN LOVE)
             const data = query.map((item) => ({
@@ -56,7 +57,8 @@ export class PrismaCategoryRepository implements CategoryRepository{
           const query = await prisma.categoria.create ({
             data: {
                 titulo: data.titulo,
-                url: data.url
+                url: data.url,
+                activo: data.activo
             }
           });
             return query?.id ? true : false;
