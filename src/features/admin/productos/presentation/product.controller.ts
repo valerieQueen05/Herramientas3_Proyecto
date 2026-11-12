@@ -1,29 +1,45 @@
 import { aroma } from "@/src/utils/location";
 import { NextResponse } from "next/server";
 import { logger } from "@/src/commons/utils/logger";
-import { PrismaProductRepository } from "../infrastructure/prisma-product.repository";
-import { IUpdate } from "../domain/product.entity";
-import {prisma} from "@/src/commons/lib/prisma";
-
-
+import { IRequestParams } from "@/src/utils/interfaces";
 import { productContainer } from "../productos.container";
-import { productoSchema } from "../schemas/productoSchema";
+import { productoSchema, ProductoFormData } from "../schemas/productoSchema";
 
 // catch() gives `unknown`; logger expects string | Error
 const toError = (error: unknown) => error instanceof Error ? error : String(error);
-
-// Mantenemos esto para que las funciones viejas (list, update, delete) sigan funcionando por ahora
-const repo = new PrismaProductRepository();
 const serverError = () =>
   NextResponse.json({ message: aroma.errors.serverError }, { status: 500 });
 
+// Lee el id de la URL (/api/product/5) y lo convierte a número.
+// Devuelve null si no es un número válido.
+const getIdFromParams = async (params: IRequestParams["params"]) => {
+  const { id } = await params;
+  const numericId = Number(id);
+  return Number.isInteger(numericId) && numericId > 0 ? numericId : null;
+};
+
+// Traducimos los nombres del formulario a los nombres de la BD
+const toProductData = (form: ProductoFormData) => ({
+  titulo: form.nombre,
+  descripcion: form.descripcion,
+  precioCompra: form.precioCompra,
+  precioVenta: form.precioVenta,
+  stock: form.stock,
+  imagen: form.emoji,
+  activo: form.estado === "Activo",
+  categoriaId: form.categoriaId,
+});
+
 export async function listProducts() {
   try {
-    return NextResponse.json({
-      data: await repo.list()
-    });
+    const data = await productContainer.listProducts.execute();
+
+    if (!data)
+      return NextResponse.json({ message: aroma.errors.notFoundData }, { status: 404 });
+
+    return NextResponse.json({ data });
   } catch (error) {
-    logger({ error: toError(error), module: 'listProducts' });
+    logger({ error: toError(error), module: "listProducts" });
     return serverError();
   }
 }
@@ -33,84 +49,83 @@ export async function createProduct(req: Request) {
     const bodyData = await req.json();
     const validation = productoSchema.safeParse(bodyData);
 
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: validation.error.issues },
-        { status: 422 }
-      );
-    }
+    if (!validation.success)
+      return NextResponse.json({ message: aroma.errors.unprocessableContent }, { status: 422 });
 
-    const formData = validation.data;
+    const status = await productContainer.createProduct.execute(toProductData(validation.data));
 
-    // El formulario envía el nombre de la categoría, pero el producto necesita su ID.
-    const categoria = await prisma.categoria.findFirst({
-      where: {
-        titulo: formData.categoria,
-        activo: true,
-      },
-      select: { id: true },
-    });
+    if (!status)
+      return NextResponse.json({ message: aroma.errors.created }, { status: 500 });
 
-    if (!categoria) {
-      return NextResponse.json(
-        { error: "La categoría seleccionada no existe o está inactiva" },
-        { status: 422 }
-      );
-    }
-
-    const datosProducto = {
-      titulo: formData.nombre,
-      descripcion: formData.descripcion,
-      precioCompra: formData.precio,
-      precioVenta: formData.precio,
-      stock: formData.stock,
-      imagen: formData.emoji,
-      categoriaId: categoria.id,
-    };
-
-    // Una sola llamada, con los nombres de campos que espera el caso de uso.
-    const result = await productContainer.createProduct.execute(datosProducto);
-
-    if (!result) {
-      return serverError();
-    }
-
-    return NextResponse.json({ mensaje: true });
+    return NextResponse.json({ message: aroma.success.created }, { status: 201 });
   } catch (error) {
     logger({ error: toError(error), module: "createProduct" });
     return serverError();
   }
 }
 
-export async function getProductById(id: number) {
-    try {
-      return NextResponse.json({
-        data: await repo.getById(id)
-      });
-    } catch(error) {
-      logger({ error: toError(error), module: 'getProductById' });
-      return serverError();
-    }
-}
-
-export async function updateProduct(data: IUpdate) {
+export async function getProductById(req: Request, { params }: IRequestParams) {
   try {
-    return NextResponse.json({
-      data: await repo.update(data)
-    });
+    const id = await getIdFromParams(params);
+
+    if (!id)
+      return NextResponse.json({ message: aroma.errors.invalidId }, { status: 400 });
+
+    const data = await productContainer.getProductById.execute(id);
+
+    if (!data)
+      return NextResponse.json({ message: aroma.errors.notFound }, { status: 404 });
+
+    return NextResponse.json({ data });
   } catch (error) {
-    logger({ error: toError(error), module: 'updateProduct' });
+    logger({ error: toError(error), module: "getProductById" });
     return serverError();
   }
 }
 
-export async function deleteProduct(id: number) {
+export async function updateProduct(req: Request, { params }: IRequestParams) {
   try {
-    return NextResponse.json({
-      data: await repo.delete(id)
+    const id = await getIdFromParams(params);
+
+    if (!id)
+      return NextResponse.json({ message: aroma.errors.invalidId }, { status: 400 });
+
+    const bodyData = await req.json();
+    const validation = productoSchema.safeParse(bodyData);
+
+    if (!validation.success)
+      return NextResponse.json({ message: aroma.errors.unprocessableContent }, { status: 422 });
+
+    const status = await productContainer.updateProduct.execute({
+      id,
+      ...toProductData(validation.data),
     });
+
+    if (!status)
+      return NextResponse.json({ message: aroma.errors.updated }, { status: 500 });
+
+    return NextResponse.json({ message: aroma.success.updated });
   } catch (error) {
-    logger({ error: toError(error), module: 'deleteProduct' });
+    logger({ error: toError(error), module: "updateProduct" });
+    return serverError();
+  }
+}
+
+export async function deleteProduct(req: Request, { params }: IRequestParams) {
+  try {
+    const id = await getIdFromParams(params);
+
+    if (!id)
+      return NextResponse.json({ message: aroma.errors.invalidId }, { status: 400 });
+
+    const status = await productContainer.deleteProduct.execute(id);
+
+    if (!status)
+      return NextResponse.json({ message: aroma.errors.deleted }, { status: 500 });
+
+    return NextResponse.json({ message: aroma.success.deleted });
+  } catch (error) {
+    logger({ error: toError(error), module: "deleteProduct" });
     return serverError();
   }
 }

@@ -1,32 +1,38 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Modal from "@/src/commons/components/Modal";
 import CampoError from "@/src/commons/components/CampoError";
+import { apiFetch } from "@/src/commons/utils/api";
 import {
   crearUsuarioSchema,
   UsuarioFormData,
 } from "@/src/features/admin/usuarios/schemas/usuarioSchema";
 
+// Así se ve un usuario en la tabla (sin contraseña)
 export interface Usuario {
   id: number;
   nombre: string;
+  apellido: string;
   email: string;
-  rol: "Administrador" | "Administrativo" | "Mensajero";
+  rol: "Administrador" | "Administrativo" | "Mensajero" | "Cliente";
   estado: "Activo" | "Inactivo";
 }
 
 interface ModalUsuarioProps {
   usuario?: Usuario;
   onClose: () => void;
-  onGuardar: (usuario: Omit<Usuario, "id">) => void;
+  onGuardar: () => void;
+  onNotificar?: (mensaje: string, tipo: "success" | "error" | "loading") => void;
 }
 
 export default function ModalUsuario({
   usuario,
   onClose,
   onGuardar,
+  onNotificar,
 }: ModalUsuarioProps) {
   const esEdicion = Boolean(usuario);
 
@@ -38,6 +44,7 @@ export default function ModalUsuario({
     resolver: zodResolver(crearUsuarioSchema(esEdicion)),
     defaultValues: {
       nombre: usuario?.nombre ?? "",
+      apellido: usuario?.apellido ?? "",
       email: usuario?.email ?? "",
       rol: usuario?.rol ?? "Administrativo",
       estado: usuario?.estado ?? "Activo",
@@ -46,10 +53,29 @@ export default function ModalUsuario({
     },
   });
 
-  // La contraseña se valida aquí, pero aún no se guarda: Usuario (datos de prueba) no la tiene.
-  // Cuando se conecte a la base, se enviará al servidor para guardarla como hash.
-  const enviar = ({ nombre, email, rol, estado }: UsuarioFormData) =>
-    onGuardar({ nombre, email, rol, estado });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const enviar = async (data: UsuarioFormData) => {
+    try {
+      setIsSubmitting(true);
+      onNotificar?.("Guardando...", "loading");
+
+      // Crear = POST /api/user  |  Editar = PATCH /api/user/:id
+      // La contraseña viaja al servidor y allá se guarda como hash
+      const method = usuario ? "PATCH" : "POST";
+      const url = usuario ? `/api/user/${usuario.id}` : "/api/user";
+
+      const res = await apiFetch<{ message: string }>(url, { method, body: data });
+
+      onNotificar?.(res.message, "success");
+      onGuardar();
+    } catch (error) {
+      console.error("Error al guardar el usuario:", error);
+      onNotificar?.(error instanceof Error ? error.message : "Error al guardar", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const inputClass =
     "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-[#16123f] focus:ring-1 focus:ring-[#16123f]";
@@ -71,18 +97,26 @@ export default function ModalUsuario({
           <button
             type="submit"
             form="form-usuario"
-            className="rounded-lg bg-[#16123f] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+            disabled={isSubmitting}
+            className="rounded-lg bg-[#16123f] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {esEdicion ? "Guardar Cambios" : "Crear Usuario"}
+            {isSubmitting ? "Guardando..." : esEdicion ? "Guardar Cambios" : "Crear Usuario"}
           </button>
         </>
       }
     >
       <form id="form-usuario" onSubmit={handleSubmit(enviar)} className="flex flex-col gap-4">
-        <div>
-          <label className={labelClass}>Nombre completo</label>
-          <input className={inputClass} placeholder="Ej: Juan Pérez" {...register("nombre")} />
-          <CampoError mensaje={errors.nombre?.message} />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Nombre</label>
+            <input className={inputClass} placeholder="Ej: Juan" {...register("nombre")} />
+            <CampoError mensaje={errors.nombre?.message} />
+          </div>
+          <div>
+            <label className={labelClass}>Apellido</label>
+            <input className={inputClass} placeholder="Ej: Pérez" {...register("apellido")} />
+            <CampoError mensaje={errors.apellido?.message} />
+          </div>
         </div>
         <div>
           <label className={labelClass}>Correo electrónico</label>
@@ -101,6 +135,7 @@ export default function ModalUsuario({
               <option>Administrador</option>
               <option>Administrativo</option>
               <option>Mensajero</option>
+              <option>Cliente</option>
             </select>
             <CampoError mensaje={errors.rol?.message} />
           </div>

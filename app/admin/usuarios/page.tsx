@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Users, Plus, Pencil, Trash2 } from "lucide-react";
 import Navbar from "@/src/commons/components/Barralateral";
 import EncabezadoSeccion from "@/src/commons/components/EncabezadoSeccion";
@@ -8,15 +8,26 @@ import Buscador from "@/src/commons/components/Buscador";
 import Badge from "@/src/commons/components/Badge";
 import ModalUsuario, { Usuario } from "@/src/features/admin/usuarios/components/ModalUsuario";
 import ModalConfirmarEliminar from "@/src/commons/components/ModalConfirmarEliminar";
+import { apiFetch } from "@/src/commons/utils/api";
+import { User } from "@/src/features/admin/usuarios/domain/user.entity";
 
-const usuariosIniciales: Usuario[] = [
-  { id: 1, nombre: "María González", email: "maria.gonzalez@cafearoma.co", rol: "Administrador", estado: "Activo" },
-  { id: 2, nombre: "Carlos Restrepo", email: "carlos.restrepo@cafearoma.co", rol: "Administrativo", estado: "Activo" },
-  { id: 3, nombre: "Andrea Torres", email: "andrea.torres@cafearoma.co", rol: "Administrativo", estado: "Inactivo" },
-  { id: 4, nombre: "Juan Moreno", email: "juan.moreno@cafearoma.co", rol: "Mensajero", estado: "Activo" },
-  { id: 5, nombre: "Sofía Vargas", email: "sofia.vargas@cafearoma.co", rol: "Mensajero", estado: "Activo" },
-  { id: 6, nombre: "Diego Pineda", email: "diego.pineda@cafearoma.co", rol: "Mensajero", estado: "Inactivo" },
-];
+// "ADMINISTRADOR" -> "Administrador"
+const capitalizar = (texto: string) => texto.charAt(0) + texto.slice(1).toLowerCase();
+
+// La API devuelve los campos de la BD (rol en mayúsculas, activo); la tabla usa (rol, estado)
+const toUsuario = (u: User): Usuario => ({
+  id: u.id,
+  nombre: u.nombre,
+  apellido: u.apellido,
+  email: u.email,
+  rol: capitalizar(u.rol) as Usuario["rol"],
+  estado: u.activo ? "Activo" : "Inactivo",
+});
+
+const obtenerUsuarios = async () => {
+  const res = await apiFetch<{ data: User[] }>("/api/user");
+  return res.data.map(toUsuario);
+};
 
 const coloresAvatar = ["bg-teal-100 text-teal-700", "bg-violet-100 text-violet-700", "bg-amber-100 text-amber-700", "bg-blue-100 text-blue-700"];
 
@@ -29,28 +40,67 @@ const iniciales = (nombre: string) =>
     .toUpperCase();
 
 export default function UsuariosPage() {
-  const [usuarios, setUsuarios] = useState(usuariosIniciales);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [modalAbierto, setModalAbierto] = useState<"nuevo" | "editar" | null>(null);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
   const [usuarioAEliminar, setUsuarioAEliminar] = useState<Usuario | null>(null);
+  const [notificacion, setNotificacion] = useState<{
+    mensaje: string;
+    tipo: "success" | "error" | "loading";
+  } | null>(null);
+
+  const cargarUsuarios = useCallback(() => {
+    obtenerUsuarios()
+      .then(setUsuarios)
+      .catch((error) =>
+        setNotificacion({
+          mensaje: error instanceof Error ? error.message : "Error al cargar los usuarios",
+          tipo: "error",
+        })
+      );
+  }, []);
+
+  useEffect(() => {
+    cargarUsuarios();
+  }, [cargarUsuarios]);
+
+  useEffect(() => {
+    if (!notificacion || notificacion.tipo === "loading") return;
+
+    const timeout = setTimeout(() => setNotificacion(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [notificacion]);
 
   const usuariosFiltrados = usuarios.filter(
     (u) =>
-      u.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      `${u.nombre} ${u.apellido}`.toLowerCase().includes(busqueda.toLowerCase()) ||
       u.email.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const guardarUsuario = (datos: Omit<Usuario, "id">) => {
-    if (modalAbierto === "editar" && usuarioSeleccionado) {
-      setUsuarios((prev) =>
-        prev.map((u) => (u.id === usuarioSeleccionado.id ? { ...u, ...datos } : u))
-      );
-    } else {
-      setUsuarios((prev) => [...prev, { id: Math.max(0, ...prev.map((u) => u.id)) + 1, ...datos }]);
-    }
+  // El modal ya guardó en la API; aquí solo cerramos y recargamos la lista
+  const guardarUsuario = () => {
     setModalAbierto(null);
     setUsuarioSeleccionado(null);
+    cargarUsuarios();
+  };
+
+  const eliminarUsuario = async (usuario: Usuario) => {
+    try {
+      setNotificacion({ mensaje: "Eliminando...", tipo: "loading" });
+      const res = await apiFetch<{ message: string }>(`/api/user/${usuario.id}`, {
+        method: "DELETE",
+      });
+      setNotificacion({ mensaje: res.message, tipo: "success" });
+      cargarUsuarios();
+    } catch (error) {
+      setNotificacion({
+        mensaje: error instanceof Error ? error.message : "Error al eliminar",
+        tipo: "error",
+      });
+    } finally {
+      setUsuarioAEliminar(null);
+    }
   };
 
   return (
@@ -100,15 +150,15 @@ export default function UsuariosPage() {
                       <span
                         className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${coloresAvatar[i % coloresAvatar.length]}`}
                       >
-                        {iniciales(u.nombre)}
+                        {iniciales(`${u.nombre} ${u.apellido}`)}
                       </span>
-                      <span className="font-medium text-gray-900">{u.nombre}</span>
+                      <span className="font-medium text-gray-900">{u.nombre} {u.apellido}</span>
                     </div>
                   </td>
                   <td className="px-6 py-3 text-gray-500">{u.email}</td>
                   <td className="px-6 py-3">
                     <Badge
-                      variant={u.rol.toLowerCase() as "administrador" | "administrativo" | "mensajero"}
+                      variant={u.rol.toLowerCase() as "administrador" | "administrativo" | "mensajero" | "cliente"}
                       label={u.rol}
                     />
                   </td>
@@ -151,6 +201,7 @@ export default function UsuariosPage() {
             setUsuarioSeleccionado(null);
           }}
           onGuardar={guardarUsuario}
+          onNotificar={(mensaje, tipo) => setNotificacion({ mensaje, tipo })}
         />
       )}
 
@@ -159,11 +210,39 @@ export default function UsuariosPage() {
           titulo="Eliminar Usuario"
           nombre={usuarioAEliminar.nombre}
           onCancelar={() => setUsuarioAEliminar(null)}
-          onConfirmar={() => {
-            setUsuarios((prev) => prev.filter((u) => u.id !== usuarioAEliminar.id));
-            setUsuarioAEliminar(null);
-          }}
+          onConfirmar={() => eliminarUsuario(usuarioAEliminar)}
         />
+      )}
+
+      {notificacion && (
+        <div
+          role={notificacion.tipo === "error" ? "alert" : "status"}
+          className={`fixed right-6 top-6 z-[60] flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-white shadow-lg ${
+            notificacion.tipo === "error"
+              ? "bg-red-600"
+              : notificacion.tipo === "success"
+                ? "bg-green-600"
+                : "bg-[#16123f]"
+          }`}
+        >
+          {notificacion.tipo === "loading" && (
+            <span
+              aria-hidden="true"
+              className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            />
+          )}
+          <span>{notificacion.mensaje}</span>
+          {notificacion.tipo !== "loading" && (
+            <button
+              type="button"
+              onClick={() => setNotificacion(null)}
+              className="ml-2 font-semibold"
+              aria-label="Cerrar notificación"
+            >
+              ×
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

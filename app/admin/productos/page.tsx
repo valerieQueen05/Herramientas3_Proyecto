@@ -1,36 +1,69 @@
 "use client";
 
-import { useState } from "react";
-import { Coffee, Plus} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Coffee, Plus } from "lucide-react";
 import Navbar from "@/src/commons/components/Barralateral";
 import EncabezadoSeccion from "@/src/commons/components/EncabezadoSeccion";
 import ModalProducto, { Producto } from "@/src/features/admin/productos/components/ModalProducto";
 import ModalConfirmarEliminar from "@/src/commons/components/ModalConfirmarEliminar";
 import TableAroma from "@/src/commons/components/TableAroma";
-
-const productosIniciales: Producto[] = [
-  { id: 1, categoria: "Cafés Calientes", nombre: "Latte Clásico", precio: 8500, stock: 40, estado: "Activo", emoji: "☕" },
-  { id: 2, categoria: "Cafés Calientes", nombre: "Cappuccino Italiano", precio: 9000, stock: 32, estado: "Activo", emoji: "☕" },
-  { id: 3, categoria: "Cafés Calientes", nombre: "Espresso Doble", precio: 6000, stock: 60, estado: "Activo", emoji: "☕" },
-  { id: 4, categoria: "Cafés Calientes", nombre: "Matcha Latte", precio: 11000, stock: 18, estado: "Activo", emoji: "🍵" },
-  { id: 5, categoria: "Bebidas Frías", nombre: "Frappuccino Caramelo", precio: 12500, stock: 25, estado: "Activo", emoji: "🥤" },
-  { id: 6, categoria: "Bebidas Frías", nombre: "Cold Brew Vainilla", precio: 10500, stock: 22, estado: "Activo", emoji: "🥤" },
-  { id: 7, categoria: "Postres", nombre: "Muffin de Arándanos", precio: 5500, stock: 15, estado: "Activo", emoji: "🧁" },
-  { id: 8, categoria: "Postres", nombre: "Cheesecake de Frutos Rojos", precio: 9500, stock: 8, estado: "Activo", emoji: "🍰" },
-  { id: 9, categoria: "Postres", nombre: "Brownie de Chocolate", precio: 6500, stock: 12, estado: "Activo", emoji: "🍫" },
-  { id: 10, categoria: "Panadería", nombre: "Croissant de Mantequilla", precio: 4500, stock: 30, estado: "Activo", emoji: "🥐" },
-  { id: 11, categoria: "Snacks", nombre: "Cookies de Chocolate", precio: 3500, stock: 50, estado: "Activo", emoji: "🍪" },
-  { id: 12, categoria: "Snacks", nombre: "Donuts Glaseadas", precio: 4000, stock: 28, estado: "Inactivo", emoji: "🍩" },
-];
+import { apiFetch } from "@/src/commons/utils/api";
+import { ProductList } from "@/src/features/admin/productos/domain/product.entity";
 
 const formatoCOP = (valor: number) => `$${valor.toLocaleString("es-CO")}`;
 
+// La API devuelve los campos de la BD (titulo, activo...); la tabla y el modal usan (nombre, estado...)
+const toProducto = (p: ProductList): Producto => ({
+  id: p.id,
+  nombre: p.titulo,
+  descripcion: p.descripcion ?? "",
+  categoriaId: p.categoriaId,
+  categoria: p.categoria.titulo,
+  precioCompra: p.precioCompra,
+  precioVenta: p.precioVenta,
+  precio: formatoCOP(p.precioVenta),
+  stock: p.stock,
+  estado: p.activo ? "Activo" : "Inactivo",
+  emoji: p.imagen ?? "☕",
+});
+
+const obtenerProductos = async () => {
+  const res = await apiFetch<{ data: ProductList[] }>("/api/product");
+  return res.data.map(toProducto);
+};
+
 export default function ProductosPage() {
-  const [productos, setProductos] = useState(productosIniciales);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [modalAbierto, setModalAbierto] = useState<"nuevo" | "editar" | null>(null);
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
   const [productoAEliminar, setProductoAEliminar] = useState<Producto | null>(null);
+  const [notificacion, setNotificacion] = useState<{
+    mensaje: string;
+    tipo: "success" | "error" | "loading";
+  } | null>(null);
+
+  const cargarProductos = useCallback(() => {
+    obtenerProductos()
+      .then(setProductos)
+      .catch((error) =>
+        setNotificacion({
+          mensaje: error instanceof Error ? error.message : "Error al cargar los productos",
+          tipo: "error",
+        })
+      );
+  }, []);
+
+  useEffect(() => {
+    cargarProductos();
+  }, [cargarProductos]);
+
+  useEffect(() => {
+    if (!notificacion || notificacion.tipo === "loading") return;
+
+    const timeout = setTimeout(() => setNotificacion(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [notificacion]);
 
   const productosFiltrados = productos.filter(
     (p) =>
@@ -38,26 +71,40 @@ export default function ProductosPage() {
       p.categoria.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const guardarProducto = (datos: Omit<Producto, "id">) => {
-    if (modalAbierto === "editar" && productoSeleccionado) {
-      setProductos((prev) =>
-        prev.map((p) => (p.id === productoSeleccionado.id ? { ...p, ...datos } : p))
-      );
-    } else {
-      setProductos((prev) => [...prev, { id: Math.max(0, ...prev.map((p) => p.id)) + 1, ...datos }]);
-    }
+  // El modal ya guardó en la API; aquí solo cerramos y recargamos la lista
+  const guardarProducto = () => {
     setModalAbierto(null);
     setProductoSeleccionado(null);
+    cargarProductos();
+  };
+
+  const eliminarProducto = async (producto: Producto) => {
+    try {
+      setNotificacion({ mensaje: "Eliminando...", tipo: "loading" });
+      const res = await apiFetch<{ message: string }>(`/api/product/${producto.id}`, {
+        method: "DELETE",
+      });
+      setNotificacion({ mensaje: res.message, tipo: "success" });
+      cargarProductos();
+    } catch (error) {
+      setNotificacion({
+        mensaje: error instanceof Error ? error.message : "Error al eliminar",
+        tipo: "error",
+      });
+    } finally {
+      setProductoAEliminar(null);
+    }
   };
 
   const handleEdit = (producto: Producto) => {
-      setProductoSeleccionado(producto);
-      setModalAbierto("editar");
-    }
-  
-    const handleDelete = (producto: Producto) => {
-      setProductoAEliminar(producto);
-    }
+    setProductoSeleccionado(producto);
+    setModalAbierto("editar");
+  };
+
+  const handleDelete = (producto: Producto) => {
+    setProductoAEliminar(producto);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -77,15 +124,15 @@ export default function ProductosPage() {
             </button>
           }
         />
-        <TableAroma 
-        headers={["ID", "Categoría", "Nombre", "Precio", "Stock", "Estado", "Acciones"]}
-        data={productosFiltrados}
-        handleEdit={handleEdit}
-        handleDelete={handleDelete}
-        handleSearch={setBusqueda}
-        searchValue={busqueda}
+        {/* El orden de los headers sigue el orden en que TableAroma pinta las columnas */}
+        <TableAroma
+          headers={["ID", "Nombre", "Precio", "Stock", "Categoría", "Estado", "Acciones"]}
+          data={productosFiltrados}
+          handleEdit={handleEdit}
+          handleDelete={handleDelete}
+          handleSearch={setBusqueda}
+          searchValue={busqueda}
         />
-
       </main>
 
       {modalAbierto && (
@@ -96,6 +143,7 @@ export default function ProductosPage() {
             setProductoSeleccionado(null);
           }}
           onGuardar={guardarProducto}
+          onNotificar={(mensaje, tipo) => setNotificacion({ mensaje, tipo })}
         />
       )}
 
@@ -104,11 +152,39 @@ export default function ProductosPage() {
           titulo="Eliminar Producto"
           nombre={productoAEliminar.nombre}
           onCancelar={() => setProductoAEliminar(null)}
-          onConfirmar={() => {
-            setProductos((prev) => prev.filter((p) => p.id !== productoAEliminar.id));
-            setProductoAEliminar(null);
-          }}
+          onConfirmar={() => eliminarProducto(productoAEliminar)}
         />
+      )}
+
+      {notificacion && (
+        <div
+          role={notificacion.tipo === "error" ? "alert" : "status"}
+          className={`fixed right-6 top-6 z-[60] flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-white shadow-lg ${
+            notificacion.tipo === "error"
+              ? "bg-red-600"
+              : notificacion.tipo === "success"
+                ? "bg-green-600"
+                : "bg-[#16123f]"
+          }`}
+        >
+          {notificacion.tipo === "loading" && (
+            <span
+              aria-hidden="true"
+              className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            />
+          )}
+          <span>{notificacion.mensaje}</span>
+          {notificacion.tipo !== "loading" && (
+            <button
+              type="button"
+              onClick={() => setNotificacion(null)}
+              className="ml-2 font-semibold"
+              aria-label="Cerrar notificación"
+            >
+              ×
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

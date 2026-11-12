@@ -1,36 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Upload, X } from "lucide-react";
 import Modal from "@/src/commons/components/Modal";
 import CampoError from "@/src/commons/components/CampoError";
+import { apiFetch } from "@/src/commons/utils/api";
 import {
   productoSchema,
   ProductoFormData,
 } from "@/src/features/admin/productos/schemas/productoSchema";
+import { CategoryList } from "@/src/features/admin/categorias/domain/category.entity";
 
+// Así se ve un producto en la tabla (nombres del formulario, no de la BD)
 export interface Producto {
   id: number;
-  categoria: string;
   nombre: string;
-  descripcion?: string;
-  precio: number;
+  descripcion: string;
+  categoriaId: number;
+  categoria: string;
+  precioCompra: number;
+  precioVenta: number;
+  precio: string; // precio de venta con formato, solo para mostrarlo en la tabla
   stock: number;
   estado: "Activo" | "Inactivo";
   emoji: string;
 }
 
-const categoriasDisponibles = ["Cafés Calientes", "Bebidas Frías", "Postres", "Panadería", "Snacks"];
-
 interface ModalProductoProps {
   producto?: Producto;
   onClose: () => void;
-  onGuardar: (producto: Omit<Producto, "id">) => void;
+  onGuardar: () => void;
+  onNotificar?: (mensaje: string, tipo: "success" | "error" | "loading") => void;
 }
 
-export default function ModalProducto({ producto, onClose, onGuardar }: ModalProductoProps) {
+export default function ModalProducto({ producto, onClose, onGuardar, onNotificar }: ModalProductoProps) {
   const {
     register,
     handleSubmit,
@@ -40,10 +45,11 @@ export default function ModalProducto({ producto, onClose, onGuardar }: ModalPro
   } = useForm<ProductoFormData>({
     resolver: zodResolver(productoSchema),
     defaultValues: {
-      categoria: producto?.categoria ?? categoriasDisponibles[0],
+      categoriaId: producto?.categoriaId,
       nombre: producto?.nombre ?? "",
       descripcion: producto?.descripcion ?? "",
-      precio: producto?.precio,
+      precioCompra: producto?.precioCompra,
+      precioVenta: producto?.precioVenta,
       stock: producto?.stock,
       estado: producto?.estado ?? "Activo",
       emoji: producto?.emoji ?? "☕",
@@ -51,17 +57,37 @@ export default function ModalProducto({ producto, onClose, onGuardar }: ModalPro
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categorias, setCategorias] = useState<CategoryList[]>([]);
+
+  // Las opciones del select vienen de la API de categorías (solo las activas)
+  useEffect(() => {
+    apiFetch<{ data: CategoryList[] }>("/api/category")
+      .then((res) => {
+        setCategorias(res.data.filter((c) => c.activo));
+        // Al editar, esperamos a tener las opciones para dejar marcada la categoría del producto
+        if (producto) setValue("categoriaId", producto.categoriaId);
+      })
+      .catch((error) => console.error("No se pudieron cargar las categorías:", error));
+  }, [producto, setValue]);
 
   const onSubmit = async (data: ProductoFormData) => {
     try {
       setIsSubmitting(true);
-      // TODO: aquí va la llamada a la API (apiFetch) cuando exista la ruta de productos
-      onGuardar(data);
-    }
-    catch (error) {
+      onNotificar?.("Guardando...", "loading");
+
+      // Crear = POST /api/product  |  Editar = PATCH /api/product/:id
+      const method = producto ? "PATCH" : "POST";
+      const url = producto ? `/api/product/${producto.id}` : "/api/product";
+
+      // apiFetch lanza un error si el status no es 2xx, así que si llega aquí salió bien
+      const res = await apiFetch<{ message: string }>(url, { method, body: data });
+
+      onNotificar?.(res.message, "success");
+      onGuardar();
+    } catch (error) {
       console.error("Error al guardar el producto:", error);
-    }
-    finally {
+      onNotificar?.(error instanceof Error ? error.message : "Error al guardar", "error");
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -102,12 +128,15 @@ export default function ModalProducto({ producto, onClose, onGuardar }: ModalPro
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Categoría</label>
-            <select className={inputClass} {...register("categoria")}>
-              {categoriasDisponibles.map((c) => (
-                <option key={c}>{c}</option>
+            <select className={inputClass} {...register("categoriaId", { valueAsNumber: true })}>
+              <option value="">Selecciona...</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.titulo}
+                </option>
               ))}
             </select>
-            <CampoError mensaje={errors.categoria?.message} />
+            <CampoError mensaje={errors.categoriaId?.message} />
           </div>
           <div>
             <label className={labelClass}>Nombre</label>
@@ -126,16 +155,26 @@ export default function ModalProducto({ producto, onClose, onGuardar }: ModalPro
           <CampoError mensaje={errors.descripcion?.message} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className={labelClass}>Precio (COP)</label>
+            <label className={labelClass}>Precio compra</label>
             <input
               type="number"
               min={0}
               className={inputClass}
-              {...register("precio", { valueAsNumber: true })}
+              {...register("precioCompra", { valueAsNumber: true })}
             />
-            <CampoError mensaje={errors.precio?.message} />
+            <CampoError mensaje={errors.precioCompra?.message} />
+          </div>
+          <div>
+            <label className={labelClass}>Precio venta</label>
+            <input
+              type="number"
+              min={0}
+              className={inputClass}
+              {...register("precioVenta", { valueAsNumber: true })}
+            />
+            <CampoError mensaje={errors.precioVenta?.message} />
           </div>
           <div>
             <label className={labelClass}>Stock</label>

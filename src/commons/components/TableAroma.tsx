@@ -43,9 +43,10 @@ export default function TableAroma<T extends ITableRow>({ headers, data, handleE
                 <tr key={c.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
                   <td className="px-6 py-3 text-gray-400">#{c.id}</td>
                   <td className="px-6 py-3 font-medium text-gray-900">{c.nombre}</td>
-                  {c.precio && <td className="px-6 py-3 text-gray-700">{c.precio}</td>}
-                  {c.stock && <td className="px-6 py-3 text-gray-700">{c.stock}</td>}
-                  {c.categoria && <td className="px-6 py-3 text-gray-700">{c.categoria}</td>}
+                  {/* "!== undefined" para que un stock de 0 también se muestre */}
+                  {c.precio !== undefined && <td className="px-6 py-3 text-gray-700">{c.precio}</td>}
+                  {c.stock !== undefined && <td className="px-6 py-3 text-gray-700">{c.stock}</td>}
+                  {c.categoria !== undefined && <td className="px-6 py-3 text-gray-700">{c.categoria}</td>}
                   <td className="px-6 py-3">
                     <Badge variant={c.estado.toLowerCase() as "activo" | "inactivo"} label={c.estado} />
                   </td>

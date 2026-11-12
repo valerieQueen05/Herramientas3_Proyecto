@@ -4,6 +4,7 @@ type BadgeVariant =
   | "administrador"
   | "administrativo"
   | "mensajero"
+  | "cliente"
   | "solicitado"
   | "pendiente"
   | "entregado"
@@ -15,6 +16,7 @@ const estilos: Record<BadgeVariant, string> = {
   administrador: "bg-violet-50 text-violet-700",
   administrativo: "bg-teal-50 text-teal-700",
   mensajero: "bg-amber-50 text-amber-700",
+  cliente: "bg-blue-50 text-blue-700",
   solicitado: "bg-amber-50 text-amber-700",
   pendiente: "bg-blue-50 text-blue-700",
   entregado: "bg-emerald-50 text-emerald-700",
