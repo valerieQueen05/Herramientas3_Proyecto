@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Buscador from "@/src/commons/components/Buscador";
 import Badge from "@/src/commons/components/Badge";
 import { Pencil, Trash2 } from "lucide-react";
@@ -10,6 +11,7 @@ interface ITableRow {
     precio?: string | number;
     stock?: string | number;
     categoria?: string;
+    imagen?: string;
 }
 
 interface ITableAromaProps<T extends ITableRow> {
@@ -43,6 +45,21 @@ export default function TableAroma<T extends ITableRow>({ headers, data, handleE
                 <tr key={c.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
                   <td className="px-6 py-3 text-gray-400">#{c.id}</td>
                   <td className="px-6 py-3 font-medium text-gray-900">{c.nombre}</td>
+                  {headers.includes("Imagen") && (
+                    <td className="px-6 py-3">
+                      {c.imagen ? (
+                        <Image
+                          src={c.imagen}
+                          alt={`Imagen de ${c.nombre}`}
+                          width={40}
+                          height={40}
+                          className="h-10 w-10 rounded object-cover"
+                        />
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                  )}
                   {/* "!== undefined" para que un stock de 0 también se muestre */}
                   {c.precio !== undefined && <td className="px-6 py-3 text-gray-700">{c.precio}</td>}
                   {c.stock !== undefined && <td className="px-6 py-3 text-gray-700">{c.stock}</td>}

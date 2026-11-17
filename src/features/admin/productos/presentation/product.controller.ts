@@ -25,7 +25,7 @@ const toProductData = (form: ProductoFormData) => ({
   precioCompra: form.precioCompra,
   precioVenta: form.precioVenta,
   stock: form.stock,
-  imagen: form.emoji,
+  imagen: form.imagen ?? form.emoji,
   activo: form.estado === "Activo",
   categoriaId: form.categoriaId,
 });

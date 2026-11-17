@@ -13,19 +13,24 @@ import { ProductList } from "@/src/features/admin/productos/domain/product.entit
 const formatoCOP = (valor: number) => `$${valor.toLocaleString("es-CO")}`;
 
 // La API devuelve los campos de la BD (titulo, activo...); la tabla y el modal usan (nombre, estado...)
-const toProducto = (p: ProductList): Producto => ({
-  id: p.id,
-  nombre: p.titulo,
-  descripcion: p.descripcion ?? "",
-  categoriaId: p.categoriaId,
-  categoria: p.categoria.titulo,
-  precioCompra: p.precioCompra,
-  precioVenta: p.precioVenta,
-  precio: formatoCOP(p.precioVenta),
-  stock: p.stock,
-  estado: p.activo ? "Activo" : "Inactivo",
-  emoji: p.imagen ?? "☕",
-});
+const toProducto = (p: ProductList): Producto => {
+  const imagen = p.imagen?.startsWith("https://") ? p.imagen : undefined;
+
+  return {
+    id: p.id,
+    nombre: p.titulo,
+    descripcion: p.descripcion ?? "",
+    categoriaId: p.categoriaId,
+    categoria: p.categoria.titulo,
+    precioCompra: p.precioCompra,
+    precioVenta: p.precioVenta,
+    precio: formatoCOP(p.precioVenta),
+    stock: p.stock,
+    estado: p.activo ? "Activo" : "Inactivo",
+    emoji: imagen ? "☕" : p.imagen ?? "☕",
+    imagen,
+  };
+};
 
 const obtenerProductos = async () => {
   const res = await apiFetch<{ data: ProductList[] }>("/api/product");
@@ -126,7 +131,7 @@ export default function ProductosPage() {
         />
         {/* El orden de los headers sigue el orden en que TableAroma pinta las columnas */}
         <TableAroma
-          headers={["ID", "Nombre", "Precio", "Stock", "Categoría", "Estado", "Acciones"]}
+          headers={["ID", "Nombre", "Imagen", "Precio", "Stock", "Categoría", "Estado", "Acciones"]}
           data={productosFiltrados}
           handleEdit={handleEdit}
           handleDelete={handleDelete}

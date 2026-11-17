@@ -25,6 +25,7 @@ export const productoSchema = z.object({
     .min(0, "El stock no puede ser negativo"),
   estado: z.enum(["Activo", "Inactivo"]),
   emoji: z.string().min(1, "Elige un icono para el producto"),
+  imagen: z.string().optional(),
 });
 
 export type ProductoFormData = z.infer<typeof productoSchema>;

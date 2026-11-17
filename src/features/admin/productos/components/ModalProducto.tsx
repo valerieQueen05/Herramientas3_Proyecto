@@ -26,6 +26,7 @@ export interface Producto {
   stock: number;
   estado: "Activo" | "Inactivo";
   emoji: string;
+  imagen?: string;
 }
 
 interface ModalProductoProps {
@@ -53,11 +54,13 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
       stock: producto?.stock,
       estado: producto?.estado ?? "Activo",
       emoji: producto?.emoji ?? "☕",
+      imagen: producto?.imagen,
     },
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categorias, setCategorias] = useState<CategoryList[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   // Las opciones del select vienen de la API de categorías (solo las activas)
   useEffect(() => {
@@ -79,8 +82,23 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
       const method = producto ? "PATCH" : "POST";
       const url = producto ? `/api/product/${producto.id}` : "/api/product";
 
+      let imagen = data.imagen;
+      if (imageFile) {
+        const uploadData = new FormData();
+        uploadData.append("file", imageFile);
+
+        const uploadResult = await apiFetch<{ url: string }>("/api/product/upload", {
+          method: "POST",
+          body: uploadData,
+        });
+        imagen = uploadResult.url;
+      }
+
       // apiFetch lanza un error si el status no es 2xx, así que si llega aquí salió bien
-      const res = await apiFetch<{ message: string }>(url, { method, body: data });
+      const res = await apiFetch<{ message: string }>(url, {
+        method,
+        body: { ...data, imagen },
+      });
 
       onNotificar?.(res.message, "success");
       onGuardar();
@@ -185,6 +203,16 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
               {...register("stock", { valueAsNumber: true })}
             />
             <CampoError mensaje={errors.stock?.message} />
+          </div>
+          <div>
+            <label className={labelClass}>Imagen del producto</label>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                setImageFile(event.target.files?.[0] ?? null);
+              }}
+            />
           </div>
         </div>
 
