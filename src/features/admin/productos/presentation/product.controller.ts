@@ -26,7 +26,6 @@ const toProductData = (form: ProductoFormData) => ({
   precioCompra: form.precioCompra,
   precioVenta: form.precioVenta,
   stock: form.stock,
-  activo: form.estado === "Activo",
   categoriaId: form.categoriaId,
 });
 
@@ -43,7 +42,6 @@ const formDataToProduct = (formData: FormData) => ({
   precioCompra: toNumber(formData.get("precioCompra")),
   precioVenta: toNumber(formData.get("precioVenta")),
   stock: toNumber(formData.get("stock")),
-  estado: formData.get("estado"),
 });
 
 // Revisa la imagen: tipo (JPG/PNG), tamaño y que el contenido sea de verdad una imagen.

@@ -14,14 +14,13 @@ import { User } from "@/src/features/admin/usuarios/domain/user.entity";
 // "ADMINISTRADOR" -> "Administrador"
 const capitalizar = (texto: string) => texto.charAt(0) + texto.slice(1).toLowerCase();
 
-// La API devuelve los campos de la BD (rol en mayúsculas, activo); la tabla usa (rol, estado)
+// La API devuelve los campos de la BD (rol en mayúsculas); la tabla usa el rol capitalizado
 const toUsuario = (u: User): Usuario => ({
   id: u.id,
   nombre: u.nombre,
   apellido: u.apellido,
   email: u.email,
   rol: capitalizar(u.rol) as Usuario["rol"],
-  estado: u.activo ? "Activo" : "Inactivo",
 });
 
 const obtenerUsuarios = async () => {
@@ -137,7 +136,6 @@ export default function UsuariosPage() {
                 <th className="px-6 py-3 font-medium">Nombre</th>
                 <th className="px-6 py-3 font-medium">Email</th>
                 <th className="px-6 py-3 font-medium">Rol</th>
-                <th className="px-6 py-3 font-medium">Estado</th>
                 <th className="px-6 py-3 text-right font-medium">Acciones</th>
               </tr>
             </thead>
@@ -161,9 +159,6 @@ export default function UsuariosPage() {
                       variant={u.rol.toLowerCase() as "administrador" | "administrativo" | "mensajero" | "cliente"}
                       label={u.rol}
                     />
-                  </td>
-                  <td className="px-6 py-3">
-                    <Badge variant={u.estado.toLowerCase() as "activo" | "inactivo"} label={u.estado} />
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex justify-end gap-3 text-gray-400">

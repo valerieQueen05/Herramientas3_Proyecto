@@ -26,7 +26,6 @@ export interface Producto {
   precioVenta: number;
   precio: string; // precio de venta con formato, solo para mostrarlo en la tabla
   stock: number;
-  estado: "Activo" | "Inactivo";
   imagen?: string; // URL de la imagen en Vercel Blob
 }
 
@@ -52,7 +51,6 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
       precioCompra: producto?.precioCompra,
       precioVenta: producto?.precioVenta,
       stock: producto?.stock,
-      estado: producto?.estado ?? "Activo",
     },
   });
 
@@ -64,11 +62,11 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
   // Vista previa: la imagen actual del producto, o la nueva que eligió el usuario
   const [preview, setPreview] = useState<string | null>(producto?.imagen ?? null);
 
-  // Las opciones del select vienen de la API de categorías (solo las activas)
+  // Las opciones del select vienen de la API de categorías
   useEffect(() => {
     apiFetch<{ data: CategoryList[] }>("/api/category")
       .then((res) => {
-        setCategorias(res.data.filter((c) => c.activo));
+        setCategorias(res.data); // la API ya devuelve solo las categorías activas
         // Al editar, esperamos a tener las opciones para dejar marcada la categoría del producto
         if (producto) setValue("categoriaId", producto.categoriaId);
       })
@@ -223,15 +221,6 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
             />
             <CampoError mensaje={errors.stock?.message} />
           </div>
-        </div>
-
-        <div>
-          <label className={labelClass}>Estado</label>
-          <select className={inputClass} {...register("estado")}>
-            <option>Activo</option>
-            <option>Inactivo</option>
-          </select>
-          <CampoError mensaje={errors.estado?.message} />
         </div>
 
         <div>

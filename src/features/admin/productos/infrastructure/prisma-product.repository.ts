@@ -9,6 +9,7 @@ export class PrismaProductRepository implements ProductRepository {
     async list(): Promise<ProductList[] | boolean> {
         try {
             const query = await prisma.producto.findMany({
+                where: { activo: true }, // borrado lógico: los eliminados no se listan
                 // include trae también el nombre de la categoría (relación)
                 include: { categoria: { select: { titulo: true } } },
                 orderBy: { id: "asc" },
@@ -28,7 +29,7 @@ export class PrismaProductRepository implements ProductRepository {
 
     async getById(id: number): Promise<Product | boolean> {
         try {
-            const query = await prisma.producto.findUnique({ where: { id } });
+            const query = await prisma.producto.findFirst({ where: { id, activo: true } });
 
             if (!query) return false;
 
@@ -57,7 +58,8 @@ export class PrismaProductRepository implements ProductRepository {
         try {
             // Separamos el id (para el where) del resto de campos (para el data)
             const { id, ...campos } = data;
-            await prisma.producto.update({ where: { id }, data: campos });
+            // activo: true -> no se puede editar un producto eliminado
+            await prisma.producto.update({ where: { id, activo: true }, data: campos });
             return true;
         } catch (error) {
             logger({ error: error as Error, module: "PrismaProductRepository.update" });
@@ -65,10 +67,18 @@ export class PrismaProductRepository implements ProductRepository {
         }
     }
 
-    // Borrado lógico: no se elimina la fila, solo se marca como inactiva
+    // Borrado lógico: no se elimina la fila, solo se marca como inactiva.
+    // También cambiamos la url (que es @unique) para liberarla:
+    // así se puede volver a crear un producto con el mismo nombre.
     async delete(id: number): Promise<boolean> {
         try {
-            await prisma.producto.update({ where: { id }, data: { activo: false } });
+            const producto = await prisma.producto.findFirst({ where: { id, activo: true }, select: { url: true } });
+            if (!producto) return false;
+
+            await prisma.producto.update({
+                where: { id },
+                data: { activo: false, url: `${producto.url}-eliminado-${id}` },
+            });
             return true;
         } catch (error) {
             logger({ error: error as Error, module: "PrismaProductRepository.delete" });

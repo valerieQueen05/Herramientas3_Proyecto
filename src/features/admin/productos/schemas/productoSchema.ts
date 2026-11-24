@@ -23,7 +23,6 @@ export const productoSchema = z.object({
     .number({ error: "Ingresa un stock válido" })
     .int("El stock debe ser un número entero")
     .min(0, "El stock no puede ser negativo"),
-  estado: z.enum(["Activo", "Inactivo"]),
 });
 // La imagen no va en este schema: es un archivo (File), no texto.
 // Se valida aparte con validateImage / isRealImage (src/commons/utils/image.ts)

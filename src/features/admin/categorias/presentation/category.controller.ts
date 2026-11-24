@@ -40,10 +40,7 @@ export async function createCategory(req: Request) {
     if (!validation.success)
       return NextResponse.json({ message: aroma.errors.unprocessableContent }, { status: 422 });
 
-    const status = await categoryContainer.createCategory.execute(
-      validation.data.nombre,
-      validation.data.estado === "Activo"
-    );
+    const status = await categoryContainer.createCategory.execute(validation.data.nombre);
 
     if (!status)
       return NextResponse.json({ message: aroma.errors.created }, { status: 500 });
@@ -87,11 +84,10 @@ export async function updateCategory(req: Request, { params }: IRequestParams) {
     if (!validation.success)
       return NextResponse.json({ message: aroma.errors.unprocessableContent }, { status: 422 });
 
-    // Traducimos los nombres del formulario (nombre, estado) a los de la BD (titulo, activo)
+    // Traducimos el nombre del formulario (nombre) al de la BD (titulo)
     const status = await categoryContainer.updateCategory.execute({
       id,
       titulo: validation.data.nombre,
-      activo: validation.data.estado === "Activo",
     });
 
     if (!status)

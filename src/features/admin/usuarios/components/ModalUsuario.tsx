@@ -18,7 +18,6 @@ export interface Usuario {
   apellido: string;
   email: string;
   rol: "Administrador" | "Administrativo" | "Mensajero" | "Cliente";
-  estado: "Activo" | "Inactivo";
 }
 
 interface ModalUsuarioProps {
@@ -47,7 +46,6 @@ export default function ModalUsuario({
       apellido: usuario?.apellido ?? "",
       email: usuario?.email ?? "",
       rol: usuario?.rol ?? "Administrativo",
-      estado: usuario?.estado ?? "Activo",
       contrasena: "",
       confirmarContrasena: "",
     },
@@ -128,25 +126,15 @@ export default function ModalUsuario({
           />
           <CampoError mensaje={errors.email?.message} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Rol</label>
-            <select className={inputClass} {...register("rol")}>
-              <option>Administrador</option>
-              <option>Administrativo</option>
-              <option>Mensajero</option>
-              <option>Cliente</option>
-            </select>
-            <CampoError mensaje={errors.rol?.message} />
-          </div>
-          <div>
-            <label className={labelClass}>Estado</label>
-            <select className={inputClass} {...register("estado")}>
-              <option>Activo</option>
-              <option>Inactivo</option>
-            </select>
-            <CampoError mensaje={errors.estado?.message} />
-          </div>
+        <div>
+          <label className={labelClass}>Rol</label>
+          <select className={inputClass} {...register("rol")}>
+            <option>Administrador</option>
+            <option>Administrativo</option>
+            <option>Mensajero</option>
+            <option>Cliente</option>
+          </select>
+          <CampoError mensaje={errors.rol?.message} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>

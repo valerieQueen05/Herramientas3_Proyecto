@@ -17,7 +17,6 @@ export const crearUsuarioSchema = (esEdicion: boolean) =>
         .max(80, "El apellido no puede superar los 80 caracteres"),
       email: z.email("Ingresa un correo válido"),
       rol: z.enum(["Administrador", "Administrativo", "Mensajero", "Cliente"]),
-      estado: z.enum(["Activo", "Inactivo"]),
       contrasena: z.string(),
       confirmarContrasena: z.string(),
     })

@@ -5,11 +5,11 @@ import { createSlug } from "@/src/commons/utils/helpers";
 export class CreateUseCase {
     constructor(private repo: CategoryRepository) { }
 
-    execute(name: string, activo = true) {
+    // No recibe "activo": toda categoría nueva nace activa (@default(true) en la BD)
+    execute(name: string) {
         const data: ICreate = {
             titulo: name,
             url: createSlug(name),
-            activo,
         };
         return this.repo.create(data);
     }

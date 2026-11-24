@@ -8,6 +8,7 @@ export class PrismaCategoryRepository implements CategoryRepository{
     async list(): Promise<CategoryList[] | boolean>{
         try {
             const query = await prisma.categoria.findMany({
+                where: { activo: true }, // borrado lógico: los eliminados no se listan
                 select: { id: true, titulo: true, url: true, fechaCreacion: true, fechaActualizacion: true, activo: true },
                 orderBy: { id: "asc" },
             });
@@ -35,7 +36,7 @@ export class PrismaCategoryRepository implements CategoryRepository{
     // El repositorio solo recibe el id; el Request y los params se manejan en el controller
     async getById(id: number): Promise<Category | boolean> {
         try {
-            const query = await prisma.categoria.findUnique({ where: {id} ,
+            const query = await prisma.categoria.findFirst({ where: { id, activo: true } ,
             select: 
             { id: true,
                  titulo: true, 
@@ -58,7 +59,6 @@ export class PrismaCategoryRepository implements CategoryRepository{
             data: {
                 titulo: data.titulo,
                 url: data.url,
-                activo: data.activo
             }
           });
             return query?.id ? true : false;
@@ -71,11 +71,10 @@ export class PrismaCategoryRepository implements CategoryRepository{
     async update(data: IUpdate): Promise<boolean> {
         try {
             const query = await prisma.categoria.update({
-                where: { id: data.id },
+                where: { id: data.id, activo: true }, // no se puede editar una categoría eliminada
                 data: {
                     titulo: data.titulo,
                     url: data.url,
-                    activo: data.activo
                 }
             });
         
@@ -86,11 +85,16 @@ export class PrismaCategoryRepository implements CategoryRepository{
             return false;
         }
     }
+    // Borrado lógico: la categoría queda inactiva. Cambiamos su url (@unique)
+    // para liberarla y poder crear otra categoría con el mismo nombre.
     async delete(id: number){
         try {
+            const categoria = await prisma.categoria.findFirst({ where: { id, activo: true }, select: { url: true } });
+            if (!categoria) return false;
+
             await prisma.categoria.update({
                 where: { id },
-                data: { activo: false }
+                data: { activo: false, url: `${categoria.url}-eliminado-${id}` }
             });
 
             return true;

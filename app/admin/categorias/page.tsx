@@ -10,11 +10,10 @@ import TableAroma from "@/src/commons/components/TableAroma";
 import { apiFetch } from "@/src/commons/utils/api";
 import { CategoryList } from "@/src/features/admin/categorias/domain/category.entity";
 
-// La API devuelve los campos de la BD (titulo, activo); la tabla usa (nombre, estado)
+// La API devuelve los campos de la BD (titulo); la tabla usa (nombre)
 const toCategoria = (c: CategoryList): Categoria => ({
   id: c.id,
   nombre: c.titulo,
-  estado: c.activo ? "Activo" : "Inactivo",
 });
 
 const obtenerCategorias = async () => {
@@ -113,7 +112,7 @@ export default function CategoriasPage() {
           }
         />
         <TableAroma 
-        headers={["ID", "Nombre", "Estado", "Acciones"]} 
+        headers={["ID", "Nombre", "Acciones"]} 
         data={categoriasFiltradas} 
         handleEdit={handleEdit} 
         handleDelete={handleDelete}

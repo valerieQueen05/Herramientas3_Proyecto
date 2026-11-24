@@ -26,7 +26,6 @@ const toUserData = (form: UsuarioFormData) => ({
   apellido: form.apellido,
   email: form.email,
   rol: form.rol.toUpperCase() as Rol,
-  activo: form.estado === "Activo",
 });
 
 export async function listUsers() {

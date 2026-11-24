@@ -12,7 +12,7 @@ import { ProductList } from "@/src/features/admin/productos/domain/product.entit
 
 const formatoCOP = (valor: number) => `$${valor.toLocaleString("es-CO")}`;
 
-// La API devuelve los campos de la BD (titulo, activo...); la tabla y el modal usan (nombre, estado...)
+// La API devuelve los campos de la BD (titulo, precioVenta...); la tabla y el modal usan (nombre, precio...)
 const toProducto = (p: ProductList): Producto => {
   // Solo aceptamos URLs. Si un producto viejo quedó con un emoji guardado, se muestra sin imagen.
   const imagen = p.imagen?.startsWith("https://") ? p.imagen : undefined;
@@ -27,7 +27,6 @@ const toProducto = (p: ProductList): Producto => {
     precioVenta: p.precioVenta,
     precio: formatoCOP(p.precioVenta),
     stock: p.stock,
-    estado: p.activo ? "Activo" : "Inactivo",
     imagen,
   };
 };
@@ -131,7 +130,7 @@ export default function ProductosPage() {
         />
         {/* El orden de los headers sigue el orden en que TableAroma pinta las columnas */}
         <TableAroma
-          headers={["ID", "Nombre", "Imagen", "Precio", "Stock", "Categoría", "Estado", "Acciones"]}
+          headers={["ID", "Nombre", "Imagen", "Precio", "Stock", "Categoría", "Acciones"]}
           data={productosFiltrados}
           handleEdit={handleEdit}
           handleDelete={handleDelete}

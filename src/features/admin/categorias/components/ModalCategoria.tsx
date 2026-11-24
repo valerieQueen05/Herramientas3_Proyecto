@@ -14,7 +14,6 @@ import {
 export interface Categoria {
   id: number;
   nombre: string;
-  estado: "Activo" | "Inactivo";
 }
 
 interface ModalCategoriaProps {
@@ -38,7 +37,6 @@ export default function ModalCategoria({
     resolver: zodResolver(categoriaSchema),
     defaultValues: {
       nombre: categoria?.nombre ?? "",
-      estado: categoria?.estado ?? "Activo",
     },
   });
 
@@ -103,14 +101,6 @@ export default function ModalCategoria({
           <label className={labelClass}>Nombre</label>
           <input className={inputClass} placeholder="Ej: Cafés Calientes" {...register("nombre")} />
           <CampoError mensaje={errors.nombre?.message} />
-        </div>
-        <div>
-          <label className={labelClass}>Estado</label>
-          <select className={inputClass} {...register("estado")}>
-            <option>Activo</option>
-            <option>Inactivo</option>
-          </select>
-          <CampoError mensaje={errors.estado?.message} />
         </div>
       </form>
     </Modal>

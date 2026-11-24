@@ -1,13 +1,11 @@
 import Image from "next/image";
 import Buscador from "@/src/commons/components/Buscador";
-import Badge from "@/src/commons/components/Badge";
 import { Pencil, Trash2 } from "lucide-react";
 
-// Fila genérica: todas tienen id, nombre y estado; precio/stock/categoria son opcionales (productos)
+// Fila genérica: todas tienen id y nombre; imagen/precio/stock/categoria son opcionales (productos)
 interface ITableRow {
     id: number;
     nombre: string;
-    estado: string;
     precio?: string | number;
     stock?: string | number;
     categoria?: string;
@@ -64,9 +62,6 @@ export default function TableAroma<T extends ITableRow>({ headers, data, handleE
                   {c.precio !== undefined && <td className="px-6 py-3 text-gray-700">{c.precio}</td>}
                   {c.stock !== undefined && <td className="px-6 py-3 text-gray-700">{c.stock}</td>}
                   {c.categoria !== undefined && <td className="px-6 py-3 text-gray-700">{c.categoria}</td>}
-                  <td className="px-6 py-3">
-                    <Badge variant={c.estado.toLowerCase() as "activo" | "inactivo"} label={c.estado} />
-                  </td>
                   <td className="px-6 py-3">
                     <div className="flex justify-end gap-3 text-gray-400">
                       <button

@@ -21,6 +21,7 @@ export class PrismaUserRepository implements UserRepository {
     async list(): Promise<User[] | boolean> {
         try {
             return await prisma.usuario.findMany({
+                where: { activo: true }, // borrado lógico: los eliminados no se listan
                 select: userSelect,
                 orderBy: { id: "asc" },
             });
@@ -32,7 +33,7 @@ export class PrismaUserRepository implements UserRepository {
 
     async getById(id: number): Promise<User | boolean> {
         try {
-            const query = await prisma.usuario.findUnique({ where: { id }, select: userSelect });
+            const query = await prisma.usuario.findFirst({ where: { id, activo: true }, select: userSelect });
             return query ?? false;
         } catch (error) {
             logger({ error: error as Error, module: "PrismaUserRepository.getById" });
@@ -54,7 +55,8 @@ export class PrismaUserRepository implements UserRepository {
     async update(data: IUpdate): Promise<boolean> {
         try {
             const { id, ...campos } = data;
-            await prisma.usuario.update({ where: { id }, data: campos });
+            // activo: true -> no se puede editar un usuario eliminado
+            await prisma.usuario.update({ where: { id, activo: true }, data: campos });
             return true;
         } catch (error) {
             logger({ error: error as Error, module: "PrismaUserRepository.update" });
@@ -62,10 +64,17 @@ export class PrismaUserRepository implements UserRepository {
         }
     }
 
-    // Borrado lógico: el usuario queda inactivo, no se borra la fila
+    // Borrado lógico: el usuario queda inactivo, no se borra la fila.
+    // Cambiamos su email (@unique) para liberarlo: así ese correo se puede registrar de nuevo.
     async delete(id: number): Promise<boolean> {
         try {
-            await prisma.usuario.update({ where: { id }, data: { activo: false } });
+            const usuario = await prisma.usuario.findFirst({ where: { id, activo: true }, select: { email: true } });
+            if (!usuario) return false;
+
+            await prisma.usuario.update({
+                where: { id },
+                data: { activo: false, email: `eliminado-${id}.${usuario.email}` },
+            });
             return true;
         } catch (error) {
             logger({ error: error as Error, module: "PrismaUserRepository.delete" });
