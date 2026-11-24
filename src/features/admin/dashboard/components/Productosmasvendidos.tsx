@@ -1,34 +1,23 @@
+import Image from "next/image";
 import { Card, Table } from "@heroui/react";
+import { ImageOff } from "lucide-react";
 import Title from "@/src/commons/components/Title";
-
-interface IProducto {
-  emoji: string;
-  nombre: string;
-  categoria: string;
-  vendidos: number;
-  stock: number;
-  precio: number;
-  stockBajo?: boolean;
-}
-
-const productos: IProducto[] = [
-  { emoji: "☕", nombre: "Latte Clásico", categoria: "Cafés Calientes", vendidos: 28, stock: 40, precio: 8500 },
-  { emoji: "🧋", nombre: "Frappuccino Caramelo", categoria: "Bebidas Frías", vendidos: 22, stock: 25, precio: 12500 },
-  { emoji: "☕", nombre: "Cappuccino Italiano", categoria: "Cafés Calientes", vendidos: 19, stock: 32, precio: 9000 },
-  { emoji: "🧁", nombre: "Muffin de Arándanos", categoria: "Postres", vendidos: 15, stock: 15, precio: 5500, stockBajo: true },
-  { emoji: "🥐", nombre: "Croissant de Mantequilla", categoria: "Panadería", vendidos: 12, stock: 30, precio: 4500 },
-];
+import { IDashboard } from "@/src/features/admin/dashboard/domain/dashboard.entity";
 
 const formatoPrecio = (valor: number) =>
   `$${valor.toLocaleString("es-CO")}`;
 
-export default function ProductosMasVendidos() {
+// Los productos vienen de /api/dashboard (los que más unidades han vendido)
+export default function ProductosMasVendidos({ productos }: { productos: IDashboard["masVendidos"] }) {
   return (
     <Card className="w-full min-w-0 border border-black/5 shadow-sm p-4">
       <Card.Header className="p-0 mb-2">
         <Title title="Productos más vendidos" icon="trophy" />
       </Card.Header>
 
+      {productos.length === 0 ? (
+        <p className="py-2 text-sm text-gray-400">Aún no hay ventas registradas.</p>
+      ) : (
       <Table className="w-full">
         <Table.ScrollContainer>
           <Table.Content aria-label="Productos más vendidos">
@@ -42,13 +31,23 @@ export default function ProductosMasVendidos() {
             <Table.Body>
               {productos.map((producto) => (
                 <Table.Row
-                  key={producto.nombre}
+                  key={producto.id}
                   className="border-b border-gray-50 last:border-0"
                 >
                   <Table.Cell className="py-3">
-                    <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-50 text-lg">
-                      <span aria-hidden>{producto.emoji}</span>
-                    </div>
+                    {producto.imagen?.startsWith("https://") ? (
+                      <Image
+                        src={producto.imagen}
+                        alt={producto.nombre}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-50 text-gray-300">
+                        <ImageOff size={16} />
+                      </div>
+                    )}
                   </Table.Cell>
                   <Table.Cell className="py-3">
                     <p className="text-sm font-semibold text-[#16123f]">
@@ -75,6 +74,7 @@ export default function ProductosMasVendidos() {
           </Table.Content>
         </Table.ScrollContainer>
       </Table>
+      )}
     </Card>
   );
 }

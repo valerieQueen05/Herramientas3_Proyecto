@@ -1,18 +1,6 @@
 import { Card, Avatar } from "@heroui/react";
 import Title from "@/src/commons/components/Title";
-
-interface ICliente {
-  nombre: string;
-  pedidos: number;
-}
-
-const clientes: ICliente[] = [
-  { nombre: "Laura Patiño", pedidos: 48 },
-  { nombre: "Esteban Ríos", pedidos: 36 },
-  { nombre: "Valentina Cruz", pedidos: 29 },
-  { nombre: "Camilo Ortega", pedidos: 22 },
-  { nombre: "Daniela Mora", pedidos: 18 },
-];
+import { IClienteFiel } from "@/src/features/admin/dashboard/domain/dashboard.entity";
 
 const iniciales = (nombre: string) =>
   nombre
@@ -21,7 +9,8 @@ const iniciales = (nombre: string) =>
     .slice(0, 2)
     .join("");
 
-export default function ClientesFieles() {
+// Los clientes vienen de /api/dashboard (los que más pedidos han hecho)
+export default function ClientesFieles({ clientes }: { clientes: IClienteFiel[] }) {
   return (
     <Card className="w-full min-w-0 border border-black/5 shadow-sm p-4">
       <Card.Header className="p-0 mb-3">
@@ -29,9 +18,12 @@ export default function ClientesFieles() {
       </Card.Header>
 
       <div className="flex flex-col gap-1">
+        {clientes.length === 0 && (
+          <p className="p-2 text-sm text-gray-400">Aún no hay pedidos registrados.</p>
+        )}
         {clientes.map((cliente, index) => (
           <div
-            key={cliente.nombre}
+            key={cliente.id}
             className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
