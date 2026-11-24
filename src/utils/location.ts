@@ -58,6 +58,7 @@ deleted: 'Error al eliminar el registro',
 notFoundData: 'No se encontraron registros',
 notFound: 'El registro no existe',
 invalidId: 'El id enviado no es valido',
+imageRequired: 'La imagen del producto es obligatoria',
 },
 success: {
 created: 'Registro creado correctamente',
