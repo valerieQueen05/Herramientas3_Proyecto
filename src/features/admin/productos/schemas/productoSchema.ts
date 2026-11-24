@@ -24,8 +24,8 @@ export const productoSchema = z.object({
     .int("El stock debe ser un número entero")
     .min(0, "El stock no puede ser negativo"),
   estado: z.enum(["Activo", "Inactivo"]),
-  emoji: z.string().min(1, "Elige un icono para el producto"),
-  imagen: z.string().optional(),
 });
+// La imagen no va en este schema: es un archivo (File), no texto.
+// Se valida aparte con validateImage / isRealImage (src/commons/utils/image.ts)
 
 export type ProductoFormData = z.infer<typeof productoSchema>;

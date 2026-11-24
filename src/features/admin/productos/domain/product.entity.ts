@@ -30,6 +30,10 @@ export interface ICreate {
   categoriaId: number;
 }
 
+// Lo que recibe el caso de uso de CREAR: no trae url (se genera) ni imagen (URL),
+// sino el archivo de la imagen, que el caso de uso sube a Vercel Blob
+export type ICreateInput = Omit<ICreate, "url" | "imagen"> & { image: File };
+
 export interface IUpdate {
   id: number;
   titulo?: string;
@@ -42,3 +46,7 @@ export interface IUpdate {
   activo?: boolean;
   categoriaId?: number;
 }
+
+// Lo que recibe el caso de uso de EDITAR: la imagen es opcional
+// (si no viene, el producto conserva la que tenía)
+export type IUpdateInput = Omit<IUpdate, "url" | "imagen"> & { image?: File };

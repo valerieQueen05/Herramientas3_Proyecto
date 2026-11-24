@@ -4,6 +4,7 @@ import { logger } from "@/src/commons/utils/logger";
 import { IRequestParams } from "@/src/utils/interfaces";
 import { productContainer } from "../productos.container";
 import { productoSchema, ProductoFormData } from "../schemas/productoSchema";
+import { validateImage, isRealImage } from "@/src/commons/utils/image";
 
 // catch() gives `unknown`; logger expects string | Error
 const toError = (error: unknown) => error instanceof Error ? error : String(error);
@@ -25,10 +26,32 @@ const toProductData = (form: ProductoFormData) => ({
   precioCompra: form.precioCompra,
   precioVenta: form.precioVenta,
   stock: form.stock,
-  imagen: form.imagen ?? form.emoji,
   activo: form.estado === "Activo",
   categoriaId: form.categoriaId,
 });
+
+// En un FormData todo llega como texto. Convertimos a número los campos numéricos.
+// Un campo vacío o que no vino queda como NaN, y Zod lo rechaza.
+const toNumber = (value: FormDataEntryValue | null) =>
+  value === null || value === "" ? NaN : Number(value);
+
+// Arma el objeto que valida Zod a partir del FormData que manda el modal
+const formDataToProduct = (formData: FormData) => ({
+  categoriaId: toNumber(formData.get("categoriaId")),
+  nombre: String(formData.get("nombre") ?? ""),
+  descripcion: String(formData.get("descripcion") ?? ""),
+  precioCompra: toNumber(formData.get("precioCompra")),
+  precioVenta: toNumber(formData.get("precioVenta")),
+  stock: toNumber(formData.get("stock")),
+  estado: formData.get("estado"),
+});
+
+// Revisa la imagen: tipo (JPG/PNG), tamaño y que el contenido sea de verdad una imagen.
+// Devuelve el mensaje de error, o null si está bien.
+const checkImage = async (image: File) =>
+  validateImage(image) ?? ((await isRealImage(image)) ? null : "El archivo no es una imagen JPG o PNG válida");
+
+const unprocessable = (message: string) => NextResponse.json({ message }, { status: 422 });
 
 export async function listProducts() {
   try {
@@ -46,13 +69,25 @@ export async function listProducts() {
 
 export async function createProduct(req: Request) {
   try {
-    const bodyData = await req.json();
-    const validation = productoSchema.safeParse(bodyData);
+    // El modal manda multipart/form-data (texto + archivo), no JSON
+    const formData = await req.formData();
+    const validation = productoSchema.safeParse(formDataToProduct(formData));
 
     if (!validation.success)
-      return NextResponse.json({ message: aroma.errors.unprocessableContent }, { status: 422 });
+      return unprocessable(aroma.errors.unprocessableContent);
 
-    const status = await productContainer.createProduct.execute(toProductData(validation.data));
+    // Al crear, la imagen es obligatoria
+    const image = formData.get("image");
+    if (!(image instanceof File) || image.size === 0)
+      return unprocessable(aroma.errors.imageRequired);
+
+    const imageError = await checkImage(image);
+    if (imageError) return unprocessable(imageError);
+
+    const status = await productContainer.createProduct.execute({
+      ...toProductData(validation.data),
+      image,
+    });
 
     if (!status)
       return NextResponse.json({ message: aroma.errors.created }, { status: 500 });
@@ -90,15 +125,25 @@ export async function updateProduct(req: Request, { params }: IRequestParams) {
     if (!id)
       return NextResponse.json({ message: aroma.errors.invalidId }, { status: 400 });
 
-    const bodyData = await req.json();
-    const validation = productoSchema.safeParse(bodyData);
+    const formData = await req.formData();
+    const validation = productoSchema.safeParse(formDataToProduct(formData));
 
     if (!validation.success)
-      return NextResponse.json({ message: aroma.errors.unprocessableContent }, { status: 422 });
+      return unprocessable(aroma.errors.unprocessableContent);
+
+    // Al editar, la imagen es opcional: solo se revisa si mandaron una nueva
+    const image = formData.get("image");
+    const hasImage = image instanceof File && image.size > 0;
+
+    if (hasImage) {
+      const imageError = await checkImage(image);
+      if (imageError) return unprocessable(imageError);
+    }
 
     const status = await productContainer.updateProduct.execute({
       id,
       ...toProductData(validation.data),
+      image: hasImage ? image : undefined,
     });
 
     if (!status)

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Upload, X } from "lucide-react";
+import Image from "next/image";
+import { ImagePlus } from "lucide-react";
 import Modal from "@/src/commons/components/Modal";
 import CampoError from "@/src/commons/components/CampoError";
 import { apiFetch } from "@/src/commons/utils/api";
@@ -12,6 +13,7 @@ import {
   ProductoFormData,
 } from "@/src/features/admin/productos/schemas/productoSchema";
 import { CategoryList } from "@/src/features/admin/categorias/domain/category.entity";
+import { IMAGE_MAX_MB, IMAGE_TYPES, validateImage } from "@/src/commons/utils/image";
 
 // Así se ve un producto en la tabla (nombres del formulario, no de la BD)
 export interface Producto {
@@ -25,8 +27,7 @@ export interface Producto {
   precio: string; // precio de venta con formato, solo para mostrarlo en la tabla
   stock: number;
   estado: "Activo" | "Inactivo";
-  emoji: string;
-  imagen?: string;
+  imagen?: string; // URL de la imagen en Vercel Blob
 }
 
 interface ModalProductoProps {
@@ -41,7 +42,6 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<ProductoFormData>({
     resolver: zodResolver(productoSchema),
@@ -53,14 +53,16 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
       precioVenta: producto?.precioVenta,
       stock: producto?.stock,
       estado: producto?.estado ?? "Activo",
-      emoji: producto?.emoji ?? "☕",
-      imagen: producto?.imagen,
     },
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categorias, setCategorias] = useState<CategoryList[]>([]);
+  // La imagen no la maneja react-hook-form: es un archivo, la guardamos en su propio estado
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  // Vista previa: la imagen actual del producto, o la nueva que eligió el usuario
+  const [preview, setPreview] = useState<string | null>(producto?.imagen ?? null);
 
   // Las opciones del select vienen de la API de categorías (solo las activas)
   useEffect(() => {
@@ -73,7 +75,32 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
       .catch((error) => console.error("No se pudieron cargar las categorías:", error));
   }, [producto, setValue]);
 
+  // Se ejecuta cuando el usuario elige un archivo
+  const handleImageChange = (file: File | null) => {
+    if (!file) return;
+
+    const error = validateImage(file);
+    setImageError(error);
+
+    if (error) {
+      setImageFile(null);
+      setPreview(producto?.imagen ?? null);
+      return;
+    }
+
+    setImageFile(file);
+    // URL temporal del navegador para mostrar la imagen antes de subirla
+    setPreview(URL.createObjectURL(file));
+  };
+
   const onSubmit = async (data: ProductoFormData) => {
+    // Al crear, la imagen es obligatoria
+    if (!producto && !imageFile) {
+      setImageError("La imagen del producto es obligatoria");
+      return;
+    }
+    if (imageError) return;
+
     try {
       setIsSubmitting(true);
       onNotificar?.("Guardando...", "loading");
@@ -82,23 +109,16 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
       const method = producto ? "PATCH" : "POST";
       const url = producto ? `/api/product/${producto.id}` : "/api/product";
 
-      let imagen = data.imagen;
-      if (imageFile) {
-        const uploadData = new FormData();
-        uploadData.append("file", imageFile);
-
-        const uploadResult = await apiFetch<{ url: string }>("/api/product/upload", {
-          method: "POST",
-          body: uploadData,
-        });
-        imagen = uploadResult.url;
-      }
+      // FormData permite mandar texto y archivos en la misma petición (multipart/form-data).
+      // Object.keys recorre los campos del formulario: categoriaId, nombre, descripcion...
+      const formData = new FormData();
+      (Object.keys(data) as (keyof ProductoFormData)[]).forEach((key) => {
+        formData.append(key, String(data[key]));
+      });
+      if (imageFile) formData.append("image", imageFile);
 
       // apiFetch lanza un error si el status no es 2xx, así que si llega aquí salió bien
-      const res = await apiFetch<{ message: string }>(url, {
-        method,
-        body: { ...data, imagen },
-      });
+      const res = await apiFetch<{ message: string }>(url, { method, body: formData });
 
       onNotificar?.(res.message, "success");
       onGuardar();
@@ -110,7 +130,6 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
     }
   };
 
-  const emoji = watch("emoji");
   const esEdicion = Boolean(producto);
 
   const inputClass =
@@ -204,16 +223,6 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
             />
             <CampoError mensaje={errors.stock?.message} />
           </div>
-          <div>
-            <label className={labelClass}>Imagen del producto</label>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => {
-                setImageFile(event.target.files?.[0] ?? null);
-              }}
-            />
-          </div>
         </div>
 
         <div>
@@ -226,31 +235,36 @@ export default function ModalProducto({ producto, onClose, onGuardar, onNotifica
         </div>
 
         <div>
-          <label className={labelClass}>Icono del producto</label>
+          <label className={labelClass}>Imagen del producto</label>
           <div className="flex items-center gap-3">
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-lg bg-gray-50 text-2xl">
-              {emoji}
-              <button
-                type="button"
-                onClick={() => setValue("emoji", "", { shouldValidate: true })}
-                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
-                aria-label="Quitar icono"
-              >
-                <X size={12} />
-              </button>
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+              {preview ? (
+                // unoptimized: la vista previa puede ser una URL temporal (blob:) del navegador
+                <Image
+                  src={preview}
+                  alt="Vista previa del producto"
+                  width={64}
+                  height={64}
+                  unoptimized
+                  className="h-16 w-16 object-cover"
+                />
+              ) : (
+                <ImagePlus size={20} className="text-gray-300" />
+              )}
             </div>
             <label className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 py-4 text-xs text-gray-400 transition hover:border-[#16123f] hover:text-[#16123f]">
-              <Upload size={16} />
-              Elige un emoji representativo
+              <ImagePlus size={16} />
+              {imageFile ? imageFile.name : esEdicion ? "Cambiar imagen (opcional)" : "Elegir imagen"}
+              <span>JPG o PNG, máximo {IMAGE_MAX_MB} MB</span>
               <input
-                type="text"
-                maxLength={2}
+                type="file"
+                accept={IMAGE_TYPES.join(",")}
                 className="sr-only"
-                onChange={(e) => setValue("emoji", e.target.value, { shouldValidate: true })}
+                onChange={(e) => handleImageChange(e.target.files?.[0] ?? null)}
               />
             </label>
           </div>
-          <CampoError mensaje={errors.emoji?.message} />
+          <CampoError mensaje={imageError ?? undefined} />
         </div>
       </form>
     </Modal>

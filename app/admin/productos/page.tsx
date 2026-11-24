@@ -14,6 +14,7 @@ const formatoCOP = (valor: number) => `$${valor.toLocaleString("es-CO")}`;
 
 // La API devuelve los campos de la BD (titulo, activo...); la tabla y el modal usan (nombre, estado...)
 const toProducto = (p: ProductList): Producto => {
+  // Solo aceptamos URLs. Si un producto viejo quedó con un emoji guardado, se muestra sin imagen.
   const imagen = p.imagen?.startsWith("https://") ? p.imagen : undefined;
 
   return {
@@ -27,7 +28,6 @@ const toProducto = (p: ProductList): Producto => {
     precio: formatoCOP(p.precioVenta),
     stock: p.stock,
     estado: p.activo ? "Activo" : "Inactivo",
-    emoji: imagen ? "☕" : p.imagen ?? "☕",
     imagen,
   };
 };
