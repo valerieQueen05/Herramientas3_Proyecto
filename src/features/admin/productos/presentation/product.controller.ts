@@ -1,6 +1,7 @@
 import { aroma } from "@/src/utils/location";
 import { NextResponse } from "next/server";
 import { logger } from "@/src/commons/utils/logger";
+import { requireAdmin, requireAuth } from "@/src/commons/lib/auth";
 import { IRequestParams } from "@/src/utils/interfaces";
 import { productContainer } from "../productos.container";
 import { productoSchema, ProductoFormData } from "../schemas/productoSchema";
@@ -53,6 +54,9 @@ const unprocessable = (message: string) => NextResponse.json({ message }, { stat
 
 export async function listProducts() {
   try {
+    const auth = await requireAuth();
+    if (auth.response) return auth.response;
+
     const data = await productContainer.listProducts.execute();
 
     if (!data)
@@ -67,6 +71,9 @@ export async function listProducts() {
 
 export async function createProduct(req: Request) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     // El modal manda multipart/form-data (texto + archivo), no JSON
     const formData = await req.formData();
     const validation = productoSchema.safeParse(formDataToProduct(formData));
@@ -99,6 +106,9 @@ export async function createProduct(req: Request) {
 
 export async function getProductById(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAuth();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)
@@ -118,6 +128,9 @@ export async function getProductById(req: Request, { params }: IRequestParams) {
 
 export async function updateProduct(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)
@@ -156,6 +169,9 @@ export async function updateProduct(req: Request, { params }: IRequestParams) {
 
 export async function deleteProduct(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)

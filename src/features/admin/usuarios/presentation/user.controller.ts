@@ -1,6 +1,7 @@
 import { aroma } from "@/src/utils/location";
 import { NextResponse } from "next/server";
 import { logger } from "@/src/commons/utils/logger";
+import { requireAdmin } from "@/src/commons/lib/auth";
 import { IRequestParams } from "@/src/utils/interfaces";
 import { userContainer } from "../user.container";
 import { crearUsuarioSchema, UsuarioFormData } from "../schemas/usuarioSchema";
@@ -22,14 +23,17 @@ const getIdFromParams = async (params: IRequestParams["params"]) => {
 // Traducimos los nombres del formulario a los de la BD.
 // "Administrador" -> "ADMINISTRADOR" (así está el enum Rol en el schema de Prisma)
 const toUserData = (form: UsuarioFormData) => ({
-  nombre: form.nombre,
-  apellido: form.apellido,
-  email: form.email,
+  nombre: form.nombre.trim(),
+  apellido: form.apellido.trim(),
+  email: form.email.trim().toLowerCase(),
   rol: form.rol.toUpperCase() as Rol,
 });
 
 export async function listUsers() {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const data = await userContainer.listUsers.execute();
 
     if (!data)
@@ -44,6 +48,9 @@ export async function listUsers() {
 
 export async function createUser(req: Request) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const bodyData = await req.json();
     // false = estamos creando, la contraseña es obligatoria
     const validation = crearUsuarioSchema(false).safeParse(bodyData);
@@ -68,6 +75,9 @@ export async function createUser(req: Request) {
 
 export async function getUserById(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)
@@ -87,6 +97,9 @@ export async function getUserById(req: Request, { params }: IRequestParams) {
 
 export async function updateUser(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)
@@ -117,10 +130,19 @@ export async function updateUser(req: Request, { params }: IRequestParams) {
 
 export async function deleteUser(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)
       return NextResponse.json({ message: aroma.errors.invalidId }, { status: 400 });
+
+    if (id === auth.user.id)
+      return NextResponse.json(
+        { message: "No puedes eliminar tu propia cuenta activa" },
+        { status: 400 }
+      );
 
     const status = await userContainer.deleteUser.execute(id);
 

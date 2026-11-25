@@ -1,6 +1,7 @@
 import { aroma } from "@/src/utils/location";
 import { NextResponse } from "next/server";
 import { logger } from "@/src/commons/utils/logger";
+import { requireAdmin, requireAuth } from "@/src/commons/lib/auth";
 import { categoriaSchema } from "../schemas/categoriaSchema";
 import { categoryContainer } from "../category.container";
 import { IRequestParams } from "@/src/utils/interfaces";
@@ -20,6 +21,9 @@ const getIdFromParams = async (params: IRequestParams["params"]) => {
 
 export async function listCategories() {
   try {
+    const auth = await requireAuth();
+    if (auth.response) return auth.response;
+
     const data = await categoryContainer.listCategories.execute();
 
     if (!data)
@@ -34,6 +38,9 @@ export async function listCategories() {
 
 export async function createCategory(req: Request) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const bodyData = await req.json();
     const validation = categoriaSchema.safeParse(bodyData);
 
@@ -54,6 +61,9 @@ export async function createCategory(req: Request) {
 
 export async function getCategoryById(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAuth();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)
@@ -73,6 +83,9 @@ export async function getCategoryById(req: Request, { params }: IRequestParams) 
 
 export async function updateCategory(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)
@@ -102,6 +115,9 @@ export async function updateCategory(req: Request, { params }: IRequestParams) {
 
 export async function deleteCategory(req: Request, { params }: IRequestParams) {
   try {
+    const auth = await requireAdmin();
+    if (auth.response) return auth.response;
+
     const id = await getIdFromParams(params);
 
     if (!id)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileText, Wallet, Calendar, Eye } from "lucide-react";
 import Navbar from "@/src/commons/components/Barralateral";
 import Title from "@/src/commons/components/Title";
@@ -8,25 +8,49 @@ import TarjetaFacturacion from "@/src/features/admin/facturacion/components/Tarj
 import Badge from "@/src/commons/components/Badge";
 import ModalFactura from "@/src/features/admin/facturacion/components/ModalFactura";
 import { Pedido } from "@/src/commons/types/pedido";
-import { pedidosIniciales, formatoCOP, valorPedido } from "@/src/commons/lib/pedidosData";
+import { formatoCOP, orderToPedido, valorPedido } from "@/src/commons/lib/pedidosData";
+import { apiFetch } from "@/src/commons/utils/api";
+import { Order } from "@/src/features/admin/pedidos/domain/order.entity";
 
-const fechaReporte = "2026-08-26";
+const hoyISO = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
 
 export default function FacturacionPage() {
+  const [facturas, setFacturas] = useState<Pedido[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filtroFecha, setFiltroFecha] = useState("");
   const [filtroCliente, setFiltroCliente] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [facturaAVer, setFacturaAVer] = useState<Pedido | null>(null);
 
-  const facturas = pedidosIniciales.filter((p) => p.estado === "Entregado");
-  const totalFacturado = facturas.reduce((acc, p) => acc + valorPedido(p), 0);
+  useEffect(() => {
+    apiFetch<{ data: Order[] }>("/api/order?estado=ENTREGADO")
+      .then((res) => {
+        setFacturas(res.data.map(orderToPedido));
+        setError(null);
+      })
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Error al cargar la facturación")
+      )
+      .finally(() => setCargando(false));
+  }, []);
 
   const facturasFiltradas = facturas.filter((p) => {
+    const coincideFecha = !filtroFecha || p.fechaISO === filtroFecha;
     const coincideCliente = p.cliente.toLowerCase().includes(filtroCliente.toLowerCase());
     const coincideBusqueda =
       String(p.id).includes(busqueda) || p.cliente.toLowerCase().includes(busqueda.toLowerCase());
-    return coincideCliente && coincideBusqueda;
+    return coincideFecha && coincideCliente && coincideBusqueda;
   });
+
+  const totalFacturado = facturasFiltradas.reduce((acc, p) => acc + valorPedido(p), 0);
+  const fechaReporte = filtroFecha || hoyISO();
 
   const inputClass =
     "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-[#16123f] focus:ring-1 focus:ring-[#16123f]";
@@ -39,11 +63,17 @@ export default function FacturacionPage() {
       <main className="mx-auto flex max-w-7xl flex-col gap-6 p-6">
         <Title title="Facturación" icon="assignment" />
 
+        {error && (
+          <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <TarjetaFacturacion
             icon={FileText}
-            value={facturas.length}
-            description="Facturas del día"
+            value={facturasFiltradas.length}
+            description={filtroFecha ? "Facturas de la fecha" : "Total facturas"}
             iconBg="bg-emerald-100"
             iconColor="text-emerald-600"
           />
@@ -105,27 +135,41 @@ export default function FacturacionPage() {
               </tr>
             </thead>
             <tbody>
-              {facturasFiltradas.map((p) => (
-                <tr key={p.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
-                  <td className="px-6 py-3 font-medium text-gray-900">#{p.id}</td>
-                  <td className="px-6 py-3 text-gray-500">{p.fecha}</td>
-                  <td className="px-6 py-3 text-gray-700">{p.cliente}</td>
-                  <td className="px-6 py-3 text-gray-500">{p.ubicacion}</td>
-                  <td className="px-6 py-3 font-medium text-gray-700">{formatoCOP(valorPedido(p))}</td>
-                  <td className="px-6 py-3">
-                    <Badge variant="entregado" label="Entregado" />
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <button
-                      onClick={() => setFacturaAVer(p)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
-                    >
-                      <Eye size={13} />
-                      Ver detalles
-                    </button>
+              {cargando ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-400">
+                    Cargando facturas...
                   </td>
                 </tr>
-              ))}
+              ) : facturasFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-400">
+                    No hay facturas para mostrar.
+                  </td>
+                </tr>
+              ) : (
+                facturasFiltradas.map((p) => (
+                  <tr key={p.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
+                    <td className="px-6 py-3 font-medium text-gray-900">#{p.id}</td>
+                    <td className="px-6 py-3 text-gray-500">{p.fecha}</td>
+                    <td className="px-6 py-3 text-gray-700">{p.cliente}</td>
+                    <td className="px-6 py-3 text-gray-500">{p.ubicacion}</td>
+                    <td className="px-6 py-3 font-medium text-gray-700">{formatoCOP(valorPedido(p))}</td>
+                    <td className="px-6 py-3">
+                      <Badge variant="entregado" label="Entregado" />
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <button
+                        onClick={() => setFacturaAVer(p)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                      >
+                        <Eye size={13} />
+                        Ver detalles
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

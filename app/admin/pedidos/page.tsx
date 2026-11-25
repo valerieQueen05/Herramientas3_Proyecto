@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, Check, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Eye, Check, X, Truck } from "lucide-react";
 import Navbar from "@/src/commons/components/Barralateral";
 import Title from "@/src/commons/components/Title";
 import CardAroma from "@/src/commons/components/CardAroma";
@@ -9,32 +9,89 @@ import Badge from "@/src/commons/components/Badge";
 import ModalConfirmarAccion from "@/src/features/admin/pedidos/components/ModalConfirmarAccion";
 import ModalDetallePedido from "@/src/features/admin/pedidos/components/ModalDetallePedido";
 import { Pedido } from "@/src/commons/types/pedido";
-import { pedidosIniciales, formatoCOP, valorPedido } from "@/src/commons/lib/pedidosData";
+import { formatoCOP, orderToPedido, valorPedido } from "@/src/commons/lib/pedidosData";
+import { apiFetch } from "@/src/commons/utils/api";
+import { EstadoPedido, Order } from "@/src/features/admin/pedidos/domain/order.entity";
+
+type AccionPendiente = {
+  pedido: Pedido;
+  nuevoEstado: EstadoPedido;
+  titulo: string;
+  mensaje: string;
+  textoBoton: string;
+  colorBoton: "navy" | "rojo";
+};
 
 export default function PedidosPage() {
-  const [pedidos, setPedidos] = useState(pedidosIniciales);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [cargando, setCargando] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState("Todos");
   const [filtroFecha, setFiltroFecha] = useState("");
   const [filtroCliente, setFiltroCliente] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
-  const [pedidoAAceptar, setPedidoAAceptar] = useState<Pedido | null>(null);
-  const [pedidoARechazar, setPedidoARechazar] = useState<Pedido | null>(null);
+  const [accionPendiente, setAccionPendiente] = useState<AccionPendiente | null>(null);
   const [pedidoAVer, setPedidoAVer] = useState<Pedido | null>(null);
+  const [notificacion, setNotificacion] = useState<{
+    mensaje: string;
+    tipo: "success" | "error" | "loading";
+  } | null>(null);
+
+  const cargarPedidos = useCallback(() => {
+    apiFetch<{ data: Order[] }>("/api/order")
+      .then((res) => setPedidos(res.data.map(orderToPedido)))
+      .catch((error) =>
+        setNotificacion({
+          mensaje: error instanceof Error ? error.message : "Error al cargar los pedidos",
+          tipo: "error",
+        })
+      )
+      .finally(() => setCargando(false));
+  }, []);
+
+  useEffect(() => {
+    cargarPedidos();
+  }, [cargarPedidos]);
+
+  useEffect(() => {
+    if (!notificacion || notificacion.tipo === "loading") return;
+    const timeout = setTimeout(() => setNotificacion(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [notificacion]);
+
+  const cambiarEstado = async (pedido: Pedido, estado: EstadoPedido) => {
+    try {
+      setNotificacion({ mensaje: "Actualizando pedido...", tipo: "loading" });
+      const res = await apiFetch<{ message: string }>(`/api/order/${pedido.id}`, {
+        method: "PATCH",
+        body: { estado },
+      });
+      setNotificacion({ mensaje: res.message, tipo: "success" });
+      cargarPedidos();
+    } catch (error) {
+      setNotificacion({
+        mensaje: error instanceof Error ? error.message : "Error al actualizar el pedido",
+        tipo: "error",
+      });
+    } finally {
+      setAccionPendiente(null);
+    }
+  };
 
   const totales = {
     total: pedidos.length,
     entregados: pedidos.filter((p) => p.estado === "Entregado").length,
-    pendientes: pedidos.filter((p) => p.estado === "Pendiente").length,
+    pendientes: pedidos.filter((p) => p.estado === "Pendiente" || p.estado === "Solicitado").length,
     cancelados: pedidos.filter((p) => p.estado === "Cancelado").length,
   };
 
   const pedidosFiltrados = pedidos.filter((p) => {
     const coincideEstado = filtroEstado === "Todos" || p.estado === filtroEstado;
+    const coincideFecha = !filtroFecha || p.fechaISO === filtroFecha;
     const coincideCliente = p.cliente.toLowerCase().includes(filtroCliente.toLowerCase());
     const coincideBusqueda =
       String(p.id).includes(busqueda) || p.cliente.toLowerCase().includes(busqueda.toLowerCase());
-    return coincideEstado && coincideCliente && coincideBusqueda;
+    return coincideEstado && coincideFecha && coincideCliente && coincideBusqueda;
   });
 
   const inputClass =
@@ -47,6 +104,21 @@ export default function PedidosPage() {
 
       <main className="mx-auto flex max-w-7xl flex-col gap-6 p-6">
         <Title title="Pedidos" icon="assignment" />
+
+        {notificacion && (
+          <div
+            role="status"
+            className={`rounded-xl px-4 py-3 text-sm font-medium ${
+              notificacion.tipo === "error"
+                ? "bg-red-50 text-red-600"
+                : notificacion.tipo === "success"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-blue-50 text-blue-700"
+            }`}
+          >
+            {notificacion.mensaje}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <CardAroma
@@ -68,7 +140,7 @@ export default function PedidosPage() {
           <CardAroma
             icon="clock"
             value={totales.pendientes}
-            description="Pendientes"
+            description="Por entregar"
             backgroundColor="bg-blue-50"
             iconBg="bg-blue-100"
             iconColor="text-blue-600"
@@ -135,84 +207,131 @@ export default function PedidosPage() {
               </tr>
             </thead>
             <tbody>
-              {pedidosFiltrados.map((p) => (
-                <tr key={p.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
-                  <td className="px-6 py-3 font-medium text-gray-900">#{p.id}</td>
-                  <td className="px-6 py-3 text-gray-500">{p.fecha}</td>
-                  <td className="px-6 py-3 text-gray-700">{p.cliente}</td>
-                  <td className="px-6 py-3 text-gray-500">{p.ubicacion}</td>
-                  <td className="px-6 py-3 font-medium text-gray-700">{formatoCOP(valorPedido(p))}</td>
-                  <td className="px-6 py-3">
-                    <Badge
-                      variant={p.estado.toLowerCase() as "solicitado" | "pendiente" | "entregado" | "cancelado"}
-                      label={p.estado}
-                    />
-                  </td>
-                  <td className="px-6 py-3">
-                    <div className="flex justify-end gap-2">
-                      {p.estado === "Solicitado" && (
-                        <>
-                          <button
-                            onClick={() => setPedidoAAceptar(p)}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100"
-                          >
-                            <Check size={13} />
-                            Aceptar
-                          </button>
-                          <button
-                            onClick={() => setPedidoARechazar(p)}
-                            className="flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
-                          >
-                            <X size={13} />
-                            Rechazar
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => setPedidoAVer(p)}
-                        className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition hover:bg-gray-100"
-                      >
-                        <Eye size={13} />
-                        Ver
-                      </button>
-                    </div>
+              {cargando ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-400">
+                    Cargando pedidos...
                   </td>
                 </tr>
-              ))}
+              ) : pedidosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-400">
+                    No hay pedidos que coincidan con los filtros.
+                  </td>
+                </tr>
+              ) : (
+                pedidosFiltrados.map((p) => (
+                  <tr key={p.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
+                    <td className="px-6 py-3 font-medium text-gray-900">#{p.id}</td>
+                    <td className="px-6 py-3 text-gray-500">{p.fecha}</td>
+                    <td className="px-6 py-3 text-gray-700">{p.cliente}</td>
+                    <td className="px-6 py-3 text-gray-500">{p.ubicacion}</td>
+                    <td className="px-6 py-3 font-medium text-gray-700">{formatoCOP(valorPedido(p))}</td>
+                    <td className="px-6 py-3">
+                      <Badge
+                        variant={p.estado.toLowerCase() as "solicitado" | "pendiente" | "entregado" | "cancelado"}
+                        label={p.estado}
+                      />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="flex justify-end gap-2">
+                        {p.estado === "Solicitado" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                setAccionPendiente({
+                                  pedido: p,
+                                  nuevoEstado: "PENDIENTE",
+                                  titulo: "Aceptar Pedido",
+                                  mensaje: `¿Confirmas que deseas aceptar el pedido #${p.id}? El estado cambiará a Pendiente.`,
+                                  textoBoton: "Aceptar",
+                                  colorBoton: "navy",
+                                })
+                              }
+                              className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100"
+                            >
+                              <Check size={13} />
+                              Aceptar
+                            </button>
+                            <button
+                              onClick={() =>
+                                setAccionPendiente({
+                                  pedido: p,
+                                  nuevoEstado: "CANCELADO",
+                                  titulo: "Rechazar Pedido",
+                                  mensaje: `¿Confirmas que deseas rechazar el pedido #${p.id}? Se devolverá el stock de los productos.`,
+                                  textoBoton: "Rechazar",
+                                  colorBoton: "rojo",
+                                })
+                              }
+                              className="flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                            >
+                              <X size={13} />
+                              Rechazar
+                            </button>
+                          </>
+                        )}
+                        {p.estado === "Pendiente" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                setAccionPendiente({
+                                  pedido: p,
+                                  nuevoEstado: "ENTREGADO",
+                                  titulo: "Marcar como Entregado",
+                                  mensaje: `¿Confirmas que el pedido #${p.id} fue entregado al cliente?`,
+                                  textoBoton: "Entregar",
+                                  colorBoton: "navy",
+                                })
+                              }
+                              className="flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+                            >
+                              <Truck size={13} />
+                              Entregar
+                            </button>
+                            <button
+                              onClick={() =>
+                                setAccionPendiente({
+                                  pedido: p,
+                                  nuevoEstado: "CANCELADO",
+                                  titulo: "Cancelar Pedido",
+                                  mensaje: `¿Confirmas que deseas cancelar el pedido #${p.id}? Se devolverá el stock de los productos.`,
+                                  textoBoton: "Cancelar pedido",
+                                  colorBoton: "rojo",
+                                })
+                              }
+                              className="flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                            >
+                              <X size={13} />
+                              Cancelar
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => setPedidoAVer(p)}
+                          className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition hover:bg-gray-100"
+                        >
+                          <Eye size={13} />
+                          Ver
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </main>
 
-      {pedidoAAceptar && (
+      {accionPendiente && (
         <ModalConfirmarAccion
-          titulo="Aceptar Pedido"
-          mensaje={`¿Confirmas que deseas aceptar el pedido #${pedidoAAceptar.id}? El estado cambiará a Pendiente.`}
-          textoBoton="Aceptar"
-          colorBoton="navy"
-          onCancelar={() => setPedidoAAceptar(null)}
-          onConfirmar={() => {
-            setPedidos((prev) =>
-              prev.map((p) => (p.id === pedidoAAceptar.id ? { ...p, estado: "Pendiente" } : p))
-            );
-            setPedidoAAceptar(null);
-          }}
-        />
-      )}
-
-      {pedidoARechazar && (
-        <ModalConfirmarAccion
-          titulo="Rechazar Pedido"
-          mensaje={`¿Confirmas que deseas rechazar el pedido #${pedidoARechazar.id}? El estado cambiará a Cancelado.`}
-          textoBoton="Rechazar"
-          colorBoton="rojo"
-          onCancelar={() => setPedidoARechazar(null)}
-          onConfirmar={() => {
-            setPedidos((prev) =>
-              prev.map((p) => (p.id === pedidoARechazar.id ? { ...p, estado: "Cancelado" } : p))
-            );
-            setPedidoARechazar(null);
-          }}
+          titulo={accionPendiente.titulo}
+          mensaje={accionPendiente.mensaje}
+          textoBoton={accionPendiente.textoBoton}
+          colorBoton={accionPendiente.colorBoton}
+          onCancelar={() => setAccionPendiente(null)}
+          onConfirmar={() => cambiarEstado(accionPendiente.pedido, accionPendiente.nuevoEstado)}
         />
       )}
 
